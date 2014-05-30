@@ -437,6 +437,7 @@ p {
 }
 .code {
   font-family: Inconsolata, monospace;
+  font-size: 13px;
 }
 .newtwitter {
   padding-right: 0px;
