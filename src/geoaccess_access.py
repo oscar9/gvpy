@@ -1,4 +1,3 @@
-
 from gvsig import *
 from geom import *
 from org.gvsig.andami import PluginsLocator
@@ -59,18 +58,61 @@ class Geoprocess:
         print "Raster parameter"
         return
       param.setParameterValue(paramValue)
-
-    #Region de analisis
-    envelope = currentView().getMap().getFullEnvelope()
-    geomEnvelope = envelope.getGeometry()
-    frame = geomEnvelope.getBounds2D()
-    aExtent = AnalysisExtent()
-    aExtent.addExtent(frame)
-    algorithm.setAnalysisExtent(aExtent)
-
+      
+    #Extension
+    if 'EXTENT' in kwparams.keys():
+        AExtent = AnalysisExtent()
+        frame = kwparams['EXTENT']
+        print frame
+        if frame == 'VIEW':
+            envelope = currentView().getMap().getFullEnvelope()
+            xlow = envelope.getLowerCorner().getX()
+            ylow = envelope.getLowerCorner().getY()
+            xup = envelope.getUpperCorner().getX()
+            yup = envelope.getUpperCorner().getY()
+        else: #lista
+            xlow = frame[0]
+            ylow = frame[1]
+            xup = frame[2]
+            yup = frame[3]
+        frame = Rectangle2D.Double(xlow, ylow, xup, yup)
+        AExtent.addExtent(frame)
+        algorithm.setAnalysisExtent(AExtent)
+        print "Set Extent"
+    else:
+        print "Not Extent"
+    try:
+        if 'PATH' in kwparams.keys():
+            path = kwparams['PATH']
+            output0 = algorithm.getOutputObjects().getOutput(0)
+            out0 = output0.getOutputChannel()
+            out0.setFilename(path)
+        else: 
+            output0 = algorithm.getOutputObjects().getOutput(0)
+            out0 = output0.getOutputChannel()
+            out0.setFilename(None)
+    except:
+        pass
+        
+    
     #Ejecutar algorithm
     algorithm.execute(None,self.__outputFactory)
+    print algorithm.algorithmAsCommandLineSentences
 
+    #Archivo de salida
+    try:
+        if 'PATH' in kwparams.keys():
+            path = kwparams['PATH']
+            output0 = algorithm.getOutputObjects().getOutput(0)
+            out0 = output0.getOutputChannel()
+            out0.setFilename(path)
+        else: 
+            output0 = algorithm.getOutputObjects().getOutput(0)
+            out0 = output0.getOutputChannel()
+            out0.setFilename(None)
+    except:
+        pass
+        
     #Objetos de salida
     oos = algorithm.getOutputObjects()
     ret = dict()
@@ -103,7 +145,8 @@ def geoprocess(algorithmId, **kwparams):
   return outList
 
 def geoprocessHelp(geoalgorithmId):
-    geoprocess = Geoprocess()
+    geoprocess = Geoprocess() 
+           
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
       if algorithmId == geoalgorithmId or geoalgorithmId == "All": pass
       else: continue
@@ -122,11 +165,14 @@ def geoprocessSearch(strSearch):
     print "..Busqueda finalizada"
     
 def main(*args):
-  #geoprocessSearch(" ")
-  #geoprocessHelp("closegapsnn")
-  #geoprocessHelp("perturbatepointslayer")
-  r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
-  
-  #Devuelve una lista con las capas resultado que han sido cargadas en la vista
-  print r
-  print r[0].features().getCount()
+    #geoprocessSearch(" ")
+    #geoprocessHelp("closegapsnn")
+    #geoprocessHelp("perturbatepointslayer")
+    #r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
+    #r = geoprocess("perturbatepointslayer", EXTENT = "VIEW", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
+    #r = geoprocess("perturbatepointslayer", EXTENT = [0,0,500,500], LAYER = currentLayer(), MEAN = 10, STDDEV = 10 )
+    r = geoprocess("perturbatepointslayer", PATH = "C:/gvsig/perturbatepoints001.shp", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 )
+    #Devuelve una lista con las capas resultado que han sido cargadas en la vista
+    print ""
+    print r
+    print r[0].features().getCount()
