@@ -8,7 +8,7 @@ Working for gvSIG and OSGeo
 Developing access to SEXTANTE and gvSIG-geoprocess. This library will allow you to launch one geoprocess with your jython script.
 
 Ex: 
->>> r = geoprocess("perturbatepointslayer", LAYER = layer1,MEAN = 5, STDDEV = 5 ) 
+        r = geoprocess("perturbatepointslayer", LAYER = layer1,MEAN = 5, STDDEV = 5 ) 
 
 2. gypy.py
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
