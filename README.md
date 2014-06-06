@@ -4,7 +4,7 @@ gvpy
 GSoC Project 2014: access geoprocessing tools with scripting framework for gvsig 2.x
 Working for gvSIG and OSGeo
 
-1. geoprocess_access.py
+I. geoprocess_access.py
 Developing access to SEXTANTE and gvSIG-geoprocess. This library will allow you to launch one geoprocess with your jython script.
 
 Ex: 
@@ -13,7 +13,7 @@ Ex:
 
 
 
-2. gypy.py
+II. gypy.py
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
 
 Ex:
