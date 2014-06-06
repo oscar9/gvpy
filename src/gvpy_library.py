@@ -77,7 +77,7 @@ def addFeature(layer, *params, **kwparams):
         value = itera.next()
         for sch in schValues: 
             #Si el campo a modificar es una geometria
-            #print "Comprobación:", sch, isinstance(value, list)
+            #print "Comprobaciï¿½n:", sch, isinstance(value, list)
             #re comprobacion si es campo geometry
             #bug: Comprobar si es lista o objeto geom  en primer if
             #... sch == "Geometry" and ES UNA LISTA
