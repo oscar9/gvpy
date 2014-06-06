@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # File: gvpy.py
+# Version: v0.01
 #
 
 __author__ = """Óscar Martínez Olmos <masquesig@gmail.com>"""
