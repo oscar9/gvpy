@@ -1,5 +1,6 @@
-from gvsig import *
-from geom import *
+
+import gvsig
+import geom
 from org.gvsig.andami import PluginsLocator
 from org.gvsig.fmap.mapcontext import MapContextLocator
 import java.awt
@@ -20,6 +21,7 @@ from org.gvsig.fmap.mapcontext.layers import FLayer
 from es.unex.sextante.core import OutputFactory
 from es.unex.sextante.core import AnalysisExtent
 from java.awt.geom import RectangularShape, Rectangle2D
+from es.unex.sextante.outputs import FileOutputChannel
 
 class Geoprocess:
   def __init__(self):
@@ -81,38 +83,55 @@ class Geoprocess:
         print "Set Extent"
     else:
         print "Not Extent"
-    try:
-        if 'PATH' in kwparams.keys():
+        
+    algorithm.processAlgorithm    
+    #Archivo de salida
+    
+    if 'PATH' in kwparams.keys():
+        try:
             path = kwparams['PATH']
             output0 = algorithm.getOutputObjects().getOutput(0)
             out0 = output0.getOutputChannel()
             out0.setFilename(path)
-        else: 
-            output0 = algorithm.getOutputObjects().getOutput(0)
-            out0 = output0.getOutputChannel()
-            out0.setFilename(None)
-    except:
-        pass
-        
+        except:
+            print "Bad path"
+    elif algorithm.getOutputObjects().getOutput(0).getOutputChannel(): 
+        output0 = algorithm.getOutputObjects().getOutput(0)
+        out0 = output0.getOutputChannel()
+        out0.setFilename(None)
+    
+    
+    #***Cambiar nombre NO el de las capas
+    if 'PATH' in kwparams.keys():
+        print "PATH"
+        out0 = java.util.HashMap()
+        out0["RESULT"] = "Capa resultados"
+
+    #New Archivo de salida
     
     #Ejecutar algorithm
-    algorithm.execute(None,self.__outputFactory)
+    
+    algorithm.execute(None,self.__outputFactory,out0)
     print algorithm.algorithmAsCommandLineSentences
+    print dir(algorithm)
 
     #Archivo de salida
-    try:
-        if 'PATH' in kwparams.keys():
-            path = kwparams['PATH']
-            output0 = algorithm.getOutputObjects().getOutput(0)
-            out0 = output0.getOutputChannel()
-            out0.setFilename(path)
-        else: 
-            output0 = algorithm.getOutputObjects().getOutput(0)
-            out0 = output0.getOutputChannel()
-            out0.setFilename(None)
-    except:
-        pass
-        
+    """
+    if 'PATH' in kwparams.keys():
+        path = kwparams['PATH']
+        output0 = algorithm.getOutputObjects().getOutput(0)
+        out0 = output0.getOutputChannel()
+        print "Out0:",out0
+        out0.setFilename(path)
+    else: 
+        output0 = algorithm.getOutputObjects().getOutput(0)
+        out0 = output0.getOutputChannel()
+        print "Out0", out0
+        print "Out0 dir", dir(out0)
+        print "Out0 toString", out0.toString
+        print "Out0 type", type(out0)
+        out0.setFilename(None)
+    """
     #Objetos de salida
     oos = algorithm.getOutputObjects()
     ret = dict()
@@ -127,23 +146,30 @@ class Geoprocess:
         print "********* Raster layer"
       else:
         ret[value.getName()] = value
-
+    del(algorithm)
     return ret
 
 def geoprocess(algorithmId, **kwparams):
   geoprocess = Geoprocess()
   r = geoprocess.execute(algorithmId, kwparams )
-  view = currentView()
+  view = gvsig.currentView()
   outList = []
   
   print "Output layers: "
   for value in r.values():
     print "\t", value, value.getDataStore().getFullName()
     if isinstance(value,FLayer): 
-        out = loadShapeFile(str(value.getDataStore().getFullName()))
+        #out = value.getDataStore().getFullName()
+        crs = gvsig.currentView().getProjectionCode()
+        out = loadShapeFileFalse(str(value.getDataStore().getFullName()),crs)
         outList.append(out)
   return outList
-
+  
+def loadShapeFileFalse(shpFile, CRS='CRS:84'):
+    layer = gvsig.loadLayer('Shape',shpFile=shpFile,CRS=CRS)
+    gvsig.currentView().addLayer(layer)
+    return gvsig.Layer(layer)
+    
 def geoprocessHelp(geoalgorithmId):
     geoprocess = Geoprocess() 
            
@@ -152,7 +178,7 @@ def geoprocessHelp(geoalgorithmId):
       else: continue
       print "* Algorithm help: ", algorithm.getName()
       print "*", algorithm.commandLineHelp
-
+   
 def geoprocessSearch(strSearch):
     print "Inicio de busqueda.."
     geoprocess = Geoprocess()
@@ -168,11 +194,12 @@ def main(*args):
     #geoprocessSearch(" ")
     #geoprocessHelp("closegapsnn")
     #geoprocessHelp("perturbatepointslayer")
-    #r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
+    #r = geoprocess("perturbatepointslayer", LAYER = gvsig.currentLayer(),MEAN = 10, STDDEV = 10 )
     #r = geoprocess("perturbatepointslayer", EXTENT = "VIEW", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
     #r = geoprocess("perturbatepointslayer", EXTENT = [0,0,500,500], LAYER = currentLayer(), MEAN = 10, STDDEV = 10 )
-    r = geoprocess("perturbatepointslayer", PATH = "C:/gvsig/perturbatepoints001.shp", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 )
+    r = geoprocess("perturbatepointslayer", PATH = "C://gvsig//perturbatepoints009.shp", LAYER = gvsig.currentLayer(),MEAN = 5, STDDEV = 5 )
     #Devuelve una lista con las capas resultado que han sido cargadas en la vista
-    print ""
+    """
     print r
     print r[0].features().getCount()
+    """
