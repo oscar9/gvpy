@@ -51,12 +51,9 @@ class Geoprocess:
     
   def getAlgorithms(self):
     return self.__algorithms
-
-  def execute(self, algorithmId, kwparams):
-    info = ""
-    algorithm = self.getAlgorithms()[algorithmId]
     
-    #Parametros de entrada
+  def __defineParameters(self, algorithm, kwparams):
+    """ Input parameters """
     params = algorithm.getParameters()
     for i in range(0,params.getNumberOfParameters()):
       param = params.getParameter(i)
@@ -69,12 +66,12 @@ class Geoprocess:
         paramValue = self.__createSextanteRaster(paramValue)
       param.setParameterValue(paramValue)
       
-    #Extension
+  def __defineExtent(self, algorithm, kwparams):
     if 'EXTENT' in kwparams.keys():
-        print ("|"+kwparams.keys())
+        print ("|"+str(kwparams.keys()))
         AExtent = AnalysisExtent()
         frame = kwparams['EXTENT']
-        print ("|"+frame)
+        print ("|"+str(frame))
         if frame == 'VIEW':
             envelope = gvsig.currentView().getMap().getFullEnvelope()
             xlow = envelope.getLowerCorner().getX()
@@ -90,13 +87,8 @@ class Geoprocess:
     else:
         print ("| Not Extent")
         if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
-    
-    #algorithm.processAlgorithm    
 
-
-    
-    #Archivo de salida
-    
+  def __defineOutput(self, algorithm, kwparams):
     if 'PATH' in kwparams.keys():
         try:
             path = kwparams['PATH']
@@ -109,43 +101,13 @@ class Geoprocess:
         output0 = algorithm.getOutputObjects().getOutput(0)
         out0 = output0.getOutputChannel()
         out0.setFilename(None)
-    
-    
-    #***Cambiar nombre NO el de las capas
-    """
-    if 'PATH' in kwparams.keys():
-        print "PATH"
-        out0 = java.util.HashMap()
-        out0["RESULT"] = "Capa resultados"
-    """
-    
-    #New Archivo de salida
-    
-    #Ejecutar algorithm
-    #,out1)
-    #if algorithm.defineCharacteristics():
-    #    print algorithm.defineCharacteristics()
+        
+  def __executeAlgorithm(self, algorithm):
     algorithm.execute(None,self.__outputFactory)
-    print "| Algoritmo:", str(algorithm.algorithmAsCommandLineSentences)
-    #Archivo de salida
-    """
-    if 'PATH' in kwparams.keys():
-        path = kwparams['PATH']
-        output0 = algorithm.getOutputObjects().getOutput(0)
-        out0 = output0.getOutputChannel()
-        print "Out0:",out0
-        out0.setFilename(path)
-    else: 
-        output0 = algorithm.getOutputObjects().getOutput(0)
-        out0 = output0.getOutputChannel()
-        print "Out0", out0
-        print "Out0 dir", dir(out0)
-        print "Out0 toString", out0.toString
-        print "Out0 type", type(out0)
-        out0.setFilename(None)
-    """
-    #Objetos de salida
-    #print "*****************OBJETOS de SALIDA**********************"
+    print "| Algoritmo:", list(algorithm.algorithmAsCommandLineSentences)
+    
+  def __getOutputObjects(self, algorithm):
+    
     oos = algorithm.getOutputObjects()
     ret = dict()
     for i in range(0,oos.getOutputObjectsCount()):
@@ -168,32 +130,57 @@ class Geoprocess:
       else:
         ret[value.getName()] = value
     return ret
+    
+  def execute(self, algorithmId, kwparams):
+
+    algorithm = self.getAlgorithms()[algorithmId]
+    #Parametros de entrada
+    self.__defineParameters(algorithm, kwparams)
+    #Extension
+    self.__defineExtent(algorithm, kwparams)
+    #Archivo de salida
+    self.__defineOutput(algorithm, kwparams)
+    
+    
+    #***Cambiar nombre NO el de las capas
+    """
+    if 'PATH' in kwparams.keys():
+        print "PATH"
+        out0 = java.util.HashMap()
+        out0["RESULT"] = "Capa resultados"
+    """
+    
+    #New Archivo de salida
+    
+    #Ejecutar algorithm
+    #,out1)
+    #if algorithm.defineCharacteristics():
+    #    print algorithm.defineCharacteristics()
+    self.__executeAlgorithm(algorithm)
+    
+    #Objetos de salida
+    ret = self.__getOutputObjects(algorithm)
+    return ret
 
 def geoprocess(algorithmId, **kwparams):
   geoprocess = Geoprocess()
   r = geoprocess.execute(algorithmId, kwparams )
   view = gvsig.currentView()
+  if r == None: return
   outList = []
   print "| Output layers: "
-  """
-  try:
-      if not isinstance(r,list): 
-          print dir(r)
-          print "NEIN"
-          return
-  except:
-      pass
-  """
   for value in r.values():
-    print "|\t VALUE:", type(value) #, value.getDataStore().getFullName()
+    print "|\t Value:", value.getName()
     #if isinstance(value,FLayer): 
     if isinstance(value, FLyrVect):
         path = value.getDataStore().getFullName()
+        print "|\t\tPath: ", path
         crs = gvsig.currentView().getProjectionCode()
         out = loadShapeFileFalse(str(path),crs)
         outList.append(out)
     #elif isinstance(value, IRasterLayer):
     elif isinstance(value,FLayer):
+        print "|\t\t", value.getFileName()[0]
         raster = gvsig_raster.loadRasterLayer(value.getFileName()[0])
         outList.append(raster)
     else:
@@ -203,18 +190,22 @@ def geoprocess(algorithmId, **kwparams):
   return outList
   
 def loadShapeFileFalse(shpFile, CRS='CRS:84'):
+    try:
+        CRS = gvsig.currentProject().getProjectionCode()
+    except:
+        pass
     layer = gvsig.loadLayer('Shape',shpFile=shpFile,CRS=CRS)
     gvsig.currentView().addLayer(layer)
     return gvsig.Layer(layer)
     
 def geoprocessHelp(geoalgorithmId):
     geoprocess = Geoprocess() 
-           
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
       if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
       else: continue
       print "* Algorithm help: ", algorithm.getName().encode('UTF-8')
       print "*", algorithm.commandLineHelp.encode('UTF-8')
+    del(geoprocess)
    
 def geoprocessSearch(strSearch):
     print "Inicio de busqueda.."
@@ -226,6 +217,7 @@ def geoprocessSearch(strSearch):
         if (name.find(search) > 0) or (group.find(search)>0):
              print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
     print "..Busqueda finalizada"
+    del(geoprocess)
     
 def main(*args):
     #geoprocessSearch(" ")
@@ -248,7 +240,8 @@ def main(*args):
     
     layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
     #r1 = geoprocess("gradientlines",INPUT = layer, MIN=1, MAX=10, SKIP=1)
+    #r = geoprocess("gridorientation",INPUT=layer,METHOD=0)
     r = geoprocess("gridorientation",INPUT=layer,METHOD=0)
-    #r = geoprocess("invertnodata",INPUT=layer)
     r = geoprocess("gridorientation",INPUT=r[0],METHOD=0)
-
+    r = geoprocess("gradientlines",INPUT = r[0], MIN=1, MAX=10, SKIP=1)
+    r = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints030.tif", MEAN =0.5, STDDEV = 0.5)
