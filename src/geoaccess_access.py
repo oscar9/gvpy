@@ -6,6 +6,8 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 import java.awt
 import java.awt.event
 import java.awt.geom
+import gvsig_raster
+from java.io import File
 
 def addDependencyWithPlugin(pluginCode):
   pluginsManager = PluginsLocator.getManager()
@@ -17,12 +19,13 @@ addDependencyWithPlugin("org.gvsig.geoprocess.app.mainplugin")
 from es.unex.sextante.core import Sextante
 from es.unex.sextante.gui.core import SextanteGUI
 from org.gvsig.geoprocess.lib.sextante.dataObjects import FlyrVectIVectorLayer, FLyrRasterIRasterLayer
+from es.unex.sextante.dataObjects import IRasterLayer
 from org.gvsig.fmap.mapcontext.layers import FLayer
 from es.unex.sextante.core import OutputFactory
 from es.unex.sextante.core import AnalysisExtent
 from java.awt.geom import RectangularShape, Rectangle2D
 from es.unex.sextante.outputs import FileOutputChannel
-
+from org.gvsig.fmap.mapcontext.layers.vectorial import FLyrVect
 class Geoprocess:
   def __init__(self):
     self.__FlyrVectIVectorLayer = None
@@ -40,11 +43,17 @@ class Geoprocess:
     slayer = FlyrVectIVectorLayer()
     slayer.create(layer)
     return slayer
-
+    
+  def __createSextanteRaster(self, layer):
+    rlayer = FLyrRasterIRasterLayer()
+    rlayer.create(layer)
+    return rlayer
+    
   def getAlgorithms(self):
     return self.__algorithms
 
   def execute(self, algorithmId, kwparams):
+    info = ""
     algorithm = self.getAlgorithms()[algorithmId]
     
     #Parametros de entrada
@@ -57,34 +66,35 @@ class Geoprocess:
         paramValue = self.__createSextanteLayer(paramValue())
       #Raster a SEXTANTE
       if param.getParameterTypeName() == "Raster Layer":
-        print "Raster parameter"
-        return
+        paramValue = self.__createSextanteRaster(paramValue)
       param.setParameterValue(paramValue)
       
     #Extension
     if 'EXTENT' in kwparams.keys():
+        print ("|"+kwparams.keys())
         AExtent = AnalysisExtent()
         frame = kwparams['EXTENT']
-        print frame
+        print ("|"+frame)
         if frame == 'VIEW':
-            envelope = currentView().getMap().getFullEnvelope()
+            envelope = gvsig.currentView().getMap().getFullEnvelope()
             xlow = envelope.getLowerCorner().getX()
             ylow = envelope.getLowerCorner().getY()
             xup = envelope.getUpperCorner().getX()
             yup = envelope.getUpperCorner().getY()
         else: #lista
-            xlow = frame[0]
-            ylow = frame[1]
-            xup = frame[2]
-            yup = frame[3]
+            xlow, ylow,xup,yup  = frame[0], frame[1], frame[2], frame[3]
         frame = Rectangle2D.Double(xlow, ylow, xup, yup)
         AExtent.addExtent(frame)
         algorithm.setAnalysisExtent(AExtent)
-        print "Set Extent"
+        print ("| Set Extent")
     else:
-        print "Not Extent"
-        
-    algorithm.processAlgorithm    
+        print ("| Not Extent")
+        if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
+    
+    #algorithm.processAlgorithm    
+
+
+    
     #Archivo de salida
     
     if 'PATH' in kwparams.keys():
@@ -94,7 +104,7 @@ class Geoprocess:
             out0 = output0.getOutputChannel()
             out0.setFilename(path)
         except:
-            print "Bad path"
+            print("| Bad path")
     elif algorithm.getOutputObjects().getOutput(0).getOutputChannel(): 
         output0 = algorithm.getOutputObjects().getOutput(0)
         out0 = output0.getOutputChannel()
@@ -102,19 +112,21 @@ class Geoprocess:
     
     
     #***Cambiar nombre NO el de las capas
+    """
     if 'PATH' in kwparams.keys():
         print "PATH"
         out0 = java.util.HashMap()
         out0["RESULT"] = "Capa resultados"
-
+    """
+    
     #New Archivo de salida
     
     #Ejecutar algorithm
-    
-    algorithm.execute(None,self.__outputFactory,out0)
-    print algorithm.algorithmAsCommandLineSentences
-    print dir(algorithm)
-
+    #,out1)
+    #if algorithm.defineCharacteristics():
+    #    print algorithm.defineCharacteristics()
+    algorithm.execute(None,self.__outputFactory)
+    print "| Algoritmo:", str(algorithm.algorithmAsCommandLineSentences)
     #Archivo de salida
     """
     if 'PATH' in kwparams.keys():
@@ -133,20 +145,28 @@ class Geoprocess:
         out0.setFilename(None)
     """
     #Objetos de salida
+    #print "*****************OBJETOS de SALIDA**********************"
     oos = algorithm.getOutputObjects()
     ret = dict()
     for i in range(0,oos.getOutputObjectsCount()):
       oo = oos.getOutput(i)
       value = oo.getOutputObject()
-      if isinstance(value,FlyrVectIVectorLayer):
+      if isinstance(value, FlyrVectIVectorLayer):
+        print "| Vector"
         store = value.getFeatureStore()
         layer = MapContextLocator.getMapContextManager().createLayer(value.getName(),store)
         ret[value.getName()] = layer
-      elif isinstance(value,FLyrRasterIRasterLayer):
-        print "********* Raster layer"
+      elif isinstance(value, IRasterLayer):
+        print "| Raster layer"
+        dalManager = gvsig.DALLocator.getDataManager()
+        mapContextManager = gvsig.MapContextLocator.getMapContextManager()
+        params = dalManager.createStoreParameters("Gdal Store")
+        params.setFile(File(value.getFilename()))
+        dataStore = dalManager.createStore(params)
+        layer = mapContextManager.createLayer(value.getName(), dataStore)
+        ret[value.getName()] = layer
       else:
         ret[value.getName()] = value
-    del(algorithm)
     return ret
 
 def geoprocess(algorithmId, **kwparams):
@@ -154,15 +174,32 @@ def geoprocess(algorithmId, **kwparams):
   r = geoprocess.execute(algorithmId, kwparams )
   view = gvsig.currentView()
   outList = []
-  
-  print "Output layers: "
+  print "| Output layers: "
+  """
+  try:
+      if not isinstance(r,list): 
+          print dir(r)
+          print "NEIN"
+          return
+  except:
+      pass
+  """
   for value in r.values():
-    print "\t", value, value.getDataStore().getFullName()
-    if isinstance(value,FLayer): 
-        #out = value.getDataStore().getFullName()
+    print "|\t VALUE:", type(value) #, value.getDataStore().getFullName()
+    #if isinstance(value,FLayer): 
+    if isinstance(value, FLyrVect):
+        path = value.getDataStore().getFullName()
         crs = gvsig.currentView().getProjectionCode()
-        out = loadShapeFileFalse(str(value.getDataStore().getFullName()),crs)
+        out = loadShapeFileFalse(str(path),crs)
         outList.append(out)
+    #elif isinstance(value, IRasterLayer):
+    elif isinstance(value,FLayer):
+        raster = gvsig_raster.loadRasterLayer(value.getFileName()[0])
+        outList.append(raster)
+    else:
+        print "NOPE"
+  print "\n"
+  del (r)
   return outList
   
 def loadShapeFileFalse(shpFile, CRS='CRS:84'):
@@ -174,10 +211,10 @@ def geoprocessHelp(geoalgorithmId):
     geoprocess = Geoprocess() 
            
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
-      if algorithmId == geoalgorithmId or geoalgorithmId == "All": pass
+      if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
       else: continue
-      print "* Algorithm help: ", algorithm.getName()
-      print "*", algorithm.commandLineHelp
+      print "* Algorithm help: ", algorithm.getName().encode('UTF-8')
+      print "*", algorithm.commandLineHelp.encode('UTF-8')
    
 def geoprocessSearch(strSearch):
     print "Inicio de busqueda.."
@@ -197,9 +234,21 @@ def main(*args):
     #r = geoprocess("perturbatepointslayer", LAYER = gvsig.currentLayer(),MEAN = 10, STDDEV = 10 )
     #r = geoprocess("perturbatepointslayer", EXTENT = "VIEW", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
     #r = geoprocess("perturbatepointslayer", EXTENT = [0,0,500,500], LAYER = currentLayer(), MEAN = 10, STDDEV = 10 )
-    r = geoprocess("perturbatepointslayer", PATH = "C://gvsig//perturbatepoints009.shp", LAYER = gvsig.currentLayer(),MEAN = 5, STDDEV = 5 )
-    #Devuelve una lista con las capas resultado que han sido cargadas en la vista
-    """
-    print r
-    print r[0].features().getCount()
-    """
+    #r = geoprocess("perturbatepointslayer", PATH = "C://gvsig//perturbatepoints028.shp", LAYER = gvsig.currentLayer(),MEAN = 5, STDDEV = 5 )
+    #layer = gvsig.currentView().getLayer("data_test_lines.shp")
+    #r = geoprocess("linestoequispacedpoints", LINES=layer,DISTANCE=2)
+   
+    #for i in range(10):
+    #r = geoprocess("perturbatepointslayer", LAYER = r[0],PATH = "C://gvsig//perturbatepoints028_" + str(i) + ".shp",MEAN =0.5, STDDEV = 0.5 )
+    #r = geoprocess("fixeddistancebuffer", LAYER = r[0], DISTANCE=1, TYPES="", RINGS=3, NOTROUNDED=False)
+    
+    #RASTER
+    #r1 = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints030.tif", MEAN =0.5, STDDEV = 0.5)
+    #layer = gvsig.currentView().getLayer("perturbatepoints030")
+    
+    layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
+    #r1 = geoprocess("gradientlines",INPUT = layer, MIN=1, MAX=10, SKIP=1)
+    r = geoprocess("gridorientation",INPUT=layer,METHOD=0)
+    #r = geoprocess("invertnodata",INPUT=layer)
+    r = geoprocess("gridorientation",INPUT=r[0],METHOD=0)
+
