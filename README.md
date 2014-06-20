@@ -1,5 +1,5 @@
 #GSoC Project 2014: 
-##Access geoprocessing tools with gvsig 2.x scripting framework 
+##Access to geoprocessing tools with gvsig 2.x scripting framework 
 ----------
 **Working for gvSIG and OSGeo Foundation**
 
