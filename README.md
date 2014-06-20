@@ -23,7 +23,7 @@ Visit my project page: [\[gvpy project\]][1]
 ###gvpy_library.py + gvpy_algortihms = **gvpy**
 That means, access to shortcuts for coding inside gvsig, and access to geoprocess algorithms
 
-#### **I. gvpy_algorithms.py **
+####**I. gvpy_algorithms.py **
 Developing access to SEXTANTE and gvSIG-geoprocess. 
 This library will allow you to launch one geoprocess with your jython script.
 
