@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# File: gvpy.py
+# Version: v0.01
+#
+
+__author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
 
 import gvsig
 import geom
@@ -336,7 +343,7 @@ def main(*args):
     #RASTER
     #r1 = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints030.tif", MEAN =0.5, STDDEV = 0.5)
     #layer = gvsig.currentView().getLayer("perturbatepoints030")
-    raster = currentRaster()
+    #raster = currentRaster()
     #layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
     #r1 = geoprocess("gradientlines",INPUT = layer, MIN=1, MAX=10, SKIP=1)
     #r = geoprocess("gridorientation",INPUT=layer,METHOD=0)
@@ -348,13 +355,13 @@ def main(*args):
     #r = geoprocess("randomvector", COUNT=20, TYPE=2, EXTENT=gvsig.currentLayer())
     #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
     #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT="VIEW")
-    r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
+    # = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
     #r = geoprocess("gvSIG-convexhull", LAYER=gvsig.currentLayer(), CHECK=True, PATH = "C://gvsig//gvsigconvexhull_001.shp")
     #r = geoprocess("generaterandomnormal", PATH = "C://gvsig//per.tif", EXTENT=gvsig.currentLayer(), CELLSIZE = 100, PATH = "C://gvsig//perturbatepoints014.tif", MEAN =5, STDDEV = 5)
     
     #geoprocessHelp("tablebasicstats")
     #r =geoprocess("tablebasicstats",TABLE=gvsig.currentTable(), FIELD=0)
-    print "End"
+    print "gvpy on."
     
     
     
@@ -377,14 +384,14 @@ def main(*args):
     #addFeature(layer, "linea", "01", [[1,2],[3,10],[5,30]])
     #addFeature(layer, "pol", "02", [[50,80],[150,50],[100,10],[0,10],[50,80]])
 
-    """
-    layer = newLayer()
-    addFeature(layer, "pol", "01", [[50,80],[150,50],[100,10],[0,10],[50,80]])
-    addFeature(layer, "pol", "02", [[0,0],[10,5],[10,10],[0,10],[5,5]])
-    addFeature(layer, "pol", "03", [[-50, -34],[0,0], [-14,30]])
-    addField(layer,"campo3")
-    modifyFeatures(layer, "campo3", "nuevo poligono")
-    """
+    
+    #layer = newLayer()
+    #addFeature(layer, "pol", "01", [[50,80],[150,50],[100,10],[0,10],[50,80]])
+    #addFeature(layer, "pol", "02", [[0,0],[10,5],[10,10],[0,10],[5,5]])
+    #addFeature(layer, "pol", "03", [[-50, -34],[0,0], [-14,30]])
+    #addField(layer,"campo3")
+    #modifyFeatures(layer, "campo3", "nuevo poligono")
+    
     
     #Create shapes
     #layer1 = newLayer(layer,"C:/gvsig/point_shape.shp", 1)
@@ -436,7 +443,7 @@ def addFeature(layer, *params, **kwparams):
         value = itera.next()
         for sch in schValues: 
             #Si el campo a modificar es una geometria
-            #print "Comprobación:", sch, isinstance(value, list)
+            #print "Comprobacion:", sch, isinstance(value, list)
             #re comprobacion si es campo geometry
             #bug: Comprobar si es lista o objeto geom  en primer if
             #... sch == "Geometry" and ES UNA LISTA
