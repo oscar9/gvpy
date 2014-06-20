@@ -1,16 +1,33 @@
-GSoC Project 2014: access geoprocessing tools with scripting framework for gvsig 2.x Working for gvSIG and OSGeo
+#GSoC Project 2014: 
+##Access geoprocessing tools with gvsig 2.x scripting framework 
+----------
+**Working for gvSIG and OSGeo Foundation**
 
-JUST DOWNLOAD src/gvpy.py you dont need more for use this library
 
+Developing for gvSIG 2.x:
+ 
+**Do you want to know more about what am i doing?**
+Visit my project page: [\[gvpy project\]][1]
+
+**How install gvpy?**
+
+ 1. You just need [gvSIG 2.x][2] 
+ 2. Download `src/gvpy.py`, you don't need more.
+ 2. Move `gvpy.py` to C:\Users\[name]\gvSIG\Plugins\org.gvsig.scripting.app.extension\lib
+ 3. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
+ 4. Write before your script: `import gvpy`
 
 ----------
+###Src folder:
 
+###gvpy_library.py + gvpy_algortihms = **gvpy**
+That means, access to shortcuts for coding inside gvsig, and access to geoprocess algorithms
 
-###I. geoprocess_access.py 
+#### **I. gvpy_algorithms.py **
 Developing access to SEXTANTE and gvSIG-geoprocess. 
 This library will allow you to launch one geoprocess with your jython script.
 
-####Ex: Access to SEXTANTE
+##### Ex: Access to SEXTANTE
 ```
     r = geoprocess("perturbatepointslayer", LAYER = layer1,MEAN = 5, STDDEV = 5 ) 
 ```
@@ -19,10 +36,10 @@ This library will allow you to launch one geoprocess with your jython script.
 ----------
 
 
-###II. gypy_library.py
+####**II. gypy_library.py**
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
 
-####Ex: Shortcuts for gvSIG Scripting
+#####Ex: Shortcuts for gvSIG Scripting
 ```
     #New shape
     layer3 = newLayer(layer,"C:/gvsig/polygon_shape", 3) 
@@ -42,3 +59,7 @@ For now, this library will be to develop easy access to the scripting functions.
 You can find more info about what is gvpy here: http://oscar9.github.io/gvpy/
 
 And my weekly reports: http://masquesig.com/category/gsoc-2/
+
+
+  [1]: http://oscar9.github.io/gvpy/
+  [2]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
