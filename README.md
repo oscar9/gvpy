@@ -1,5 +1,5 @@
 #GSoC Project 2014: 
-##Access to geoprocessing tools with gvsig 2.x scripting framework 
+##Access geoprocessing tools with gvsig 2.x scripting framework 
 ----------
 **Working for gvSIG and OSGeo Foundation**
 
@@ -23,7 +23,8 @@ Visit my project page: [\[gvpy project\]][1]
 ###gvpy_library.py + gvpy_algortihms = **gvpy**
 That means, access to shortcuts for coding inside gvsig, and access to geoprocess algorithms
 
-####**I. gvpy_algorithms.py **
+
+### I. gvpy_algorithms.py
 Developing access to SEXTANTE and gvSIG-geoprocess. 
 This library will allow you to launch one geoprocess with your jython script.
 
@@ -36,7 +37,7 @@ This library will allow you to launch one geoprocess with your jython script.
 ----------
 
 
-####**II. gypy_library.py**
+### II. gypy_library.py
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
 
 #####Ex: Shortcuts for gvSIG Scripting
