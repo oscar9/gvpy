@@ -7,14 +7,15 @@
 ----------
 
 
-Developing for gvSIG 2.x:
+###Developing for gvSIG 2.x
  
 **Do you want to know more about what am i doing?**
 Visit my project page: [\[gvpy project\]][1]
+Or read all my weekly reports in my blog: [\[weekly reports\]][2]
 
 **How install gvpy?**
 
- 1. You just need [gvSIG 2.x][2] 
+ 1. You just need [gvSIG 2.x][3] 
  2. Download `src/gvpy.py`, you don't need more.
  2. Move `gvpy.py` to C:\Users\[name]\gvSIG\Plugins\org.gvsig.scripting.app.extension\lib
  3. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
@@ -23,7 +24,7 @@ Visit my project page: [\[gvpy project\]][1]
 ----------
 ###Src folder:
 
-###gvpy_library.py + gvpy_algortihms = **gvpy**
+###`gvpy_library`  +  `gvpy_algortihms` = **gvpy**
 That means, access to shortcuts for coding inside gvsig, and access to geoprocess algorithms
 
 
@@ -66,4 +67,5 @@ And my weekly reports: http://masquesig.com/category/gsoc-2/
 
 
   [1]: http://oscar9.github.io/gvpy/
-  [2]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
+  [2]: http://masquesig.com/category/gsoc-2/
+  [3]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
