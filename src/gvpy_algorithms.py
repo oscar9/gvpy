@@ -28,7 +28,10 @@ from java.awt.geom import RectangularShape, Rectangle2D
 from org.gvsig.fmap.mapcontext.layers.vectorial import FLyrVect
 from org.gvsig.raster.fmap.layers import DefaultFLyrRaster
 
-
+#Constant
+TYPE_POLYGON = 0
+TYPE_LINE = 1
+TYPE_POINT = 2
 
 class Geoprocess:
   def __init__(self):
@@ -67,7 +70,10 @@ class Geoprocess:
       params = algorithm.getParameters()
       for i in range(0,params.getNumberOfParameters()):
           param = params.getParameter(i)
-          paramValue = kwparams[param.getParameterName()]
+          if param.getParameterName() in kwparams:
+              paramValue = kwparams[param.getParameterName()]
+          else:
+              paramValue = kwparams[i]
           print "PARAMETRO", param, param.getParameterTypeName()
           #Vector a SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
@@ -243,10 +249,13 @@ class Geoprocess:
     ret = self.__getOutputObjects(algorithm)
     return ret
 
-def geoprocess(algorithmId, **kwparams):
+def geoprocess(algorithmId,*params, **kwparams):
   geoprocess = Geoprocess()
+  for i in range(0,len(params)):
+      kwparams[i]=params[i]
+  print kwparams
   r = geoprocess.execute(algorithmId, kwparams )
-  view = gvsig.currentView()
+  #view = gvsig.currentView()
   if r == None: return
   outList = []
   print "| Output layers: "
@@ -346,12 +355,18 @@ def main(*args):
     #r = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints013.tif", MEAN =0.5, STDDEV = 0.5)
     #geoprocessHelp("randomvector")
     #r = geoprocess("randomvector", COUNT=20, TYPE=2, EXTENT=gvsig.currentLayer())
+    #r = geoprocess("randomvector", 200, TYPE_POINT, EXTENT=gvsig.currentLayer(), PATH="C://gvsig//test_puntos_sm01.shp")
     #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
     #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT="VIEW")
-    r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
+    #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
     #r = geoprocess("gvSIG-convexhull", LAYER=gvsig.currentLayer(), CHECK=True, PATH = "C://gvsig//gvsigconvexhull_001.shp")
     #r = geoprocess("generaterandomnormal", PATH = "C://gvsig//per.tif", EXTENT=gvsig.currentLayer(), CELLSIZE = 100, PATH = "C://gvsig//perturbatepoints014.tif", MEAN =5, STDDEV = 5)
-    
     #geoprocessHelp("tablebasicstats")
     #r =geoprocess("tablebasicstats",TABLE=gvsig.currentTable(), FIELD=0)
+
+    #Without parameters label
+    #layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
+    #r = geoprocess("gridorientation",layer,0, PATH = "C://gvsig//perturbatepoints010.tif")
+    #r = geoprocess("gradientlines", layer, 1, 10, 1, PATH = "C://gvsig//perturbatepoints012.tif")
     print "End"
+
