@@ -25,6 +25,7 @@ Or read all my weekly reports in my blog: [\[weekly reports\]][2]
 Now try to use it:
 
  1. You can download: `src/test_import_gvpy.py`
+ 2. Open one new View inside your new Project
  2. Open gvSIG 2 - Tools - Scripting Composer 
  3. Copy text inside `test_import_gvpy.py` & Paste inside a new script
  4. Commets in every line of code inside test_import_gvpy.py, this will help you to understand how it works
