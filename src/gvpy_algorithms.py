@@ -27,7 +27,6 @@ from org.gvsig.fmap.mapcontext.layers import FLayer
 from java.awt.geom import RectangularShape, Rectangle2D
 from org.gvsig.fmap.mapcontext.layers.vectorial import FLyrVect
 from org.gvsig.raster.fmap.layers import DefaultFLyrRaster
-
 #Constant
 TYPE_POLYGON = 0
 TYPE_LINE = 1
@@ -35,7 +34,8 @@ TYPE_POINT = 2
 
 class Geoprocess:
   def __init__(self):
-    #Sextante.initialize()
+    Sextante.initialize()
+    SextanteGUI.initialize()
     self.__FlyrVectIVectorLayer = None
     self.__outputFactory = SextanteGUI.getOutputFactory()
     self.__algorithms = dict()
@@ -46,7 +46,7 @@ class Geoprocess:
       algorithms = Sextante.getAlgorithms().get(str(key))
       for name in algorithms.keySet():
         self.__algorithms[str(name)] = algorithms.get(name)
-  
+
   def __createSextanteLayer(self, layer):
       slayer = FlyrVectIVectorLayer()
       slayer.create(layer)
@@ -74,13 +74,23 @@ class Geoprocess:
               paramValue = kwparams[param.getParameterName()]
           else:
               paramValue = kwparams[i]
-          print "PARAMETRO", param, param.getParameterTypeName()
+          #print "PARAMETRO", param, param.getParameterTypeName()
           #Vector a SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
-            paramValue = self.__createSextanteLayer(paramValue())
+              if isinstance(paramValue, str):
+                  layer = gvsig.currentView().getLayer(paramValue)
+                  paramValue = self.__createSextanteLayer(layer())
+              else:
+                  paramValue = self.__createSextanteLayer(paramValue())
+
           #Raster a SEXTANTE
           elif param.getParameterTypeName() == "Raster Layer":
-            paramValue = self.__createSextanteRaster(paramValue)
+              if isinstance(paramValue, str):
+                  layer = gvsig.currentView().getLayer(paramValue)
+                  print layer
+                  paramValue = self.__createSextanteRaster(layer)
+              else:
+                  paramValue = self.__createSextanteRaster(paramValue)
           #Tabla a SEXTANTE
           elif param.getParameterTypeName() == "Table":
             paramValue = self.__createSextanteTable(paramValue())
@@ -89,10 +99,10 @@ class Geoprocess:
   def __defineExtent(self, algorithm, kwparams):
       """ Define Analysis Extent """
       if 'EXTENT' in kwparams.keys():
-          print ("|"+str(kwparams.keys()))
+          #print ("|"+str(kwparams.keys()))
           frame = kwparams['EXTENT']
           print ("|"+str(frame))
-          print "TIPO DE FRAME", type(frame)
+          #print "TIPO DE FRAME", type(frame)
           if isinstance(frame, str) and frame == 'VIEW' or isinstance(frame, gvsig.View):
               AExtent = AnalysisExtent()
               print "EXTENT ************ VIEW"
@@ -105,7 +115,7 @@ class Geoprocess:
               yup = envelope.getUpperCorner().getY()
               #print xlow, ylow, xup, yup
               frame = Rectangle2D.Double(xlow, ylow, xup, yup)
-              print frame
+              #print frame
               AExtent.addExtent(frame)
           #elif isinstance(frame, raster):
           elif isinstance(frame, DefaultFLyrRaster):
@@ -149,15 +159,41 @@ class Geoprocess:
 
   def __defineOutput(self, algorithm, kwparams):
     if 'PATH' in kwparams.keys():
-        try:
+        """
+        #try:
             path = kwparams['PATH']
-            output0 = algorithm.getOutputObjects().getOutput(0)
-            out0 = output0.getOutputChannel()
-            out0.setFilename(path)
-            print "| PATH -> Good path"
-        except:
-            print"| PATH -> Bad path"
+            outputSet = algorithm.getOutputObjects()#
             
+            out1 = outputSet.getOutput(0)
+            out1.setOutputChannel(FileOutputChannel("New_name"))
+            out1channel = out1.getOutputChannel()
+            #print out1, output0.getOutputDataObjectsCount()
+            #out0 = output0.getOutputChannel()
+            #out0 = output0.outputChannel
+            #out0 = output0.getOutput(algorithm.RESULT)
+            #out0.setFilename(path)
+            out1channel.setFilename(path)
+            print "| PATH -> Good path"
+        #except:
+        #    print"| PATH -> Bad path"
+        """
+        path = kwparams['PATH']
+        outputSet = algorithm.getOutputObjects()
+        if outputSet.getOutputDataObjectsCount() == 1:
+            out1 = outputSet.getOutput(0)
+            out1.setOutputChannel(FileOutputChannel("New_name"))
+            out1channel = out1.getOutputChannel()
+            out1channel.setFilename(path)
+            print "| PATH -> Good path"
+        elif outputSet.getOutputDataObjectsCount() > 1 and isinstance(path, list):
+            for n in range(0, outputSet.getOutputDataObjectsCount()):
+                out1 = outputSet.getOutput(n)
+                out1.setOutputChannel(FileOutputChannel("New_name"))
+                out1channel = out1.getOutputChannel()
+                out1channel.setFilename(path[n])
+                print "| PATH -> Good path"
+        else:
+            print "| PATH -> Bad path"
     elif algorithm.getOutputObjects().getOutput(0).getOutputChannel(): 
         output0 = algorithm.getOutputObjects().getOutput(0)
         out0 = output0.getOutputChannel()
@@ -170,7 +206,7 @@ class Geoprocess:
     except:
         print "| Not - algorithm"
         
-    algorithm.execute(None, self.__outputFactory)
+    algorithm.execute( None, self.__outputFactory)
     print "| Algoritmo:", list(algorithm.algorithmAsCommandLineSentences)
     
   def __getOutputObjects(self, algorithm):
@@ -211,17 +247,15 @@ class Geoprocess:
   def execute(self, algorithmId, kwparams):
     
     algorithm = self.getAlgorithms()[algorithmId]
+    #print algorithm.getAlgorithmAsCommandLineSentences()
 
     #Parametros de entrada
-    print "** Define parameters"
     self.__defineParameters(algorithm, kwparams)
 
     #Extension
-    print "** Define Extent"
     self.__defineExtent(algorithm, kwparams)
     
     #Archivo de salida
-    print "** Define Output"
     self.__defineOutput(algorithm, kwparams)
     
 
@@ -241,19 +275,17 @@ class Geoprocess:
     #algorithm.preprocessForModeller()
 
     #Ejecutar algorithm
-    print "**Execute algorithm"
     self.__executeAlgorithm(algorithm)
     
     #Output objects
-    print "** Get output objects"
     ret = self.__getOutputObjects(algorithm)
     return ret
 
-def geoprocess(algorithmId,*params, **kwparams):
+def runalg(algorithmId,*params, **kwparams):
   geoprocess = Geoprocess()
   for i in range(0,len(params)):
       kwparams[i]=params[i]
-  print kwparams
+  #print kwparams
   r = geoprocess.execute(algorithmId, kwparams )
   #view = gvsig.currentView()
   if r == None: return
@@ -267,19 +299,26 @@ def geoprocess(algorithmId,*params, **kwparams):
         path = value.getDataStore().getFullName()
         print "|\t\tPath: ", path
         crs = gvsig.currentView().getProjectionCode()
-        out = loadShapeFileFalse(str(path),crs)
-        outList.append(out)
+        value = loadShapeFileFalse(str(path),crs)
+        outList.append(value)
     #elif isinstance(value, IRasterLayer):
     elif isinstance(value,FLayer):
         print "|\t Value:", value.getName()
         print "|\t\t", value.getFileName()[0]
-        raster = gvsig_raster.loadRasterLayer(value.getFileName()[0])
-        outList.append(raster)
+        value = gvsig_raster.loadRasterLayer(value.getFileName()[0])
+        outList.append(value)
     else:
         print "Non-type"
         print "\tValue: ", value
   print "\n"
-  return outList
+  
+  #Return object or list
+  if len(r.values()) > 1:
+      return outList
+  elif len(r.values()) == 1:
+      return value
+  else:
+      return None
   
 def loadShapeFileFalse(shpFile, CRS='CRS:84'):
     try:
@@ -290,7 +329,7 @@ def loadShapeFileFalse(shpFile, CRS='CRS:84'):
     gvsig.currentView().addLayer(layer)
     return gvsig.Layer(layer)
     
-def geoprocessHelp(geoalgorithmId):
+def algHelp(geoalgorithmId):
     geoprocess = Geoprocess() 
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
       if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
@@ -299,7 +338,7 @@ def geoprocessHelp(geoalgorithmId):
       print "*", algorithm.commandLineHelp.encode('UTF-8')
     del(geoprocess)
    
-def geoprocessSearch(strSearch):
+def algSearch(strSearch):
     print "Inicio de busqueda.."
     geoprocess = Geoprocess()
     search = strSearch.encode('UTF-8')
@@ -312,61 +351,72 @@ def geoprocessSearch(strSearch):
     del(geoprocess)
     
 def currentRaster():
-    """
-    #BUG
-    for i in gvsig.currentView().getLayers(): 
-        print i
-    """
+    """Return first raster active layer on the View"""
     layers = gvsig.currentView().getLayers()
-    lyrlist = [ layers[i] for i in range(0,3)]
-    for i in lyrlist: 
-      if i.isActive and isinstance(i, DefaultFLyrRaster): return i
-    #print lyrlist
-    #if isinstance(i(), DefaultFLyrRaster):
-    #        if i.isActive: return i
-    #if i.isActive(): print i
+    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    for i in lyrlist:
+      if i.isActive() and isinstance(i, DefaultFLyrRaster):  return i
     return None
     
+def currentActive():
+    """Return first active layer on the View"""
+    layers = gvsig.currentView().getLayers()
+    lyrlist = [ layers[i] for i in range(0, layers.__len__())]
+    for i in lyrlist:
+        if i.isActive(): return i
 def main(*args):
     #geoprocessSearch(" ")
     #geoprocessHelp("closegapsnn")
     #geoprocessHelp("perturbatepointslayer")
-    #r = geoprocess("perturbatepointslayer", LAYER = gvsig.currentLayer(),MEAN = 10, STDDEV = 10 )
-    #r = geoprocess("perturbatepointslayer", EXTENT = "VIEW", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
-    #r = geoprocess("perturbatepointslayer", EXTENT = [0,0,500,500], LAYER = currentLayer(), MEAN = 10, STDDEV = 10 )
-    #r = geoprocess("perturbatepointslayer", PATH = "C://gvsig//perturbatepoints028.shp", LAYER = gvsig.currentLayer(),MEAN = 5, STDDEV = 5 )
+    #r = runalg("perturbatepointslayer", LAYER = gvsig.currentLayer(),MEAN = 10, STDDEV = 10 )
+    #r = runalg("perturbatepointslayer", EXTENT = "VIEW", LAYER = currentLayer(),MEAN = 10, STDDEV = 10 )
+    #r = runalg("perturbatepointslayer", EXTENT = [0,0,500,500], LAYER = currentLayer(), MEAN = 10, STDDEV = 10 )
+    #r = runalg("perturbatepointslayer", PATH = "C://gvsig//perturbatepoints028.shp", LAYER = gvsig.currentLayer(),MEAN = 5, STDDEV = 5 )
     #layer = gvsig.currentView().getLayer("data_test_lines.shp")
-    #r = geoprocess("linestoequispacedpoints", LINES=layer,DISTANCE=2)
+    #r = runalg("linestoequispacedpoints", LINES=layer,DISTANCE=2)
    
     #for i in range(10):
-    #r = geoprocess("perturbatepointslayer", LAYER = r[0],PATH = "C://gvsig//perturbatepoints028_" + str(i) + ".shp",MEAN =0.5, STDDEV = 0.5 )
-    #r = geoprocess("fixeddistancebuffer", LAYER = r[0], DISTANCE=1, TYPES="", RINGS=3, NOTROUNDED=False)
-    #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
+    #r = runalg("perturbatepointslayer", LAYER = r[0],PATH = "C://gvsig//perturbatepoints028_" + str(i) + ".shp",MEAN =0.5, STDDEV = 0.5 )
+    #r = runalg("fixeddistancebuffer", LAYER = r[0], DISTANCE=1, TYPES="", RINGS=3, NOTROUNDED=False)
+    #r = runalg("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
     #RASTER
-    #r1 = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints030.tif", MEAN =0.5, STDDEV = 0.5)
+    #r1 = runalg("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints030.tif", MEAN =0.5, STDDEV = 0.5)
     #layer = gvsig.currentView().getLayer("perturbatepoints030")
-    raster = currentRaster()
+    
+    #raster = currentRaster()
+    #print raster
+    
     #layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
-    #r1 = geoprocess("gradientlines",INPUT = layer, MIN=1, MAX=10, SKIP=1)
-    #r = geoprocess("gridorientation",INPUT=layer,METHOD=0)
-    #r = geoprocess("gridorientation",INPUT=layer,METHOD=0, PATH = "C://gvsig//perturbatepoints010.tif")
-    #r = geoprocess("gridorientation", INPUT=raster, METHOD=0, PATH = "C://gvsig//perturbatepoints011.tif")
-    #r = geoprocess("gradientlines", INPUT = layer, MIN=1, MAX=10, SKIP=1, PATH = "C://gvsig//perturbatepoints012.tif")
-    #r = geoprocess("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints013.tif", MEAN =0.5, STDDEV = 0.5)
+    #r1 = runalg("gradientlines",INPUT = layer, MIN=1, MAX=10, SKIP=1)
+    #r = runalg("gridorientation",INPUT=layer,METHOD=0)
+    #r = runalg("gridorientation",INPUT=layer,METHOD=0, PATH = "C://gvsig//perturbatepoints010.tif")
+    #r = runalg("gridorientation", INPUT=raster, METHOD=0, PATH = "C://gvsig//perturbatepoints011.tif")
+    #r = runalg("gradientlines", INPUT = layer, MIN=1, MAX=10, SKIP=1, PATH = "C://gvsig//perturbatepoints012.tif")
+    #r = runalg("generaterandomnormal", EXTENT = [0,0,500,500], PATH = "C://gvsig//perturbatepoints013.tif", MEAN =0.5, STDDEV = 0.5)
     #geoprocessHelp("randomvector")
-    #r = geoprocess("randomvector", COUNT=20, TYPE=2, EXTENT=gvsig.currentLayer())
-    #r = geoprocess("randomvector", 200, TYPE_POINT, EXTENT=gvsig.currentLayer(), PATH="C://gvsig//test_puntos_sm01.shp")
-    #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
-    #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT="VIEW")
-    #r = geoprocess("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
-    #r = geoprocess("gvSIG-convexhull", LAYER=gvsig.currentLayer(), CHECK=True, PATH = "C://gvsig//gvsigconvexhull_001.shp")
-    #r = geoprocess("generaterandomnormal", PATH = "C://gvsig//per.tif", EXTENT=gvsig.currentLayer(), CELLSIZE = 100, PATH = "C://gvsig//perturbatepoints014.tif", MEAN =5, STDDEV = 5)
+    #r = runalg("randomvector", COUNT=20, TYPE=2, EXTENT=gvsig.currentLayer())
+    #r = runalg("randomvector", 200, TYPE_POINT, EXTENT=gvsig.currentLayer(), PATH="C://gvsig//test_puntos_sm01.shp")
+    #r = runalg("randomvector", COUNT=20, TYPE=1, EXTENT=gvsig.currentView())
+    #r = runalg("randomvector", COUNT=20, TYPE=1, EXTENT="VIEW")
+    #r = runalg("randomvector", COUNT=20, TYPE=1, EXTENT=currentRaster())
+    #r = runalg("gvSIG-convexhull", LAYER="Puntos_de_interes_01.shp", CHECK=True, PATH = "C://gvsig//gvsigconvexhull_001.shp")
+    #r = runalg("generaterandomnormal", PATH = "C://gvsig//per.tif", EXTENT=gvsig.currentLayer(), CELLSIZE = 100, PATH = "C://gvsig//perturbatepoints014.tif", MEAN =5, STDDEV = 5)
     #geoprocessHelp("tablebasicstats")
-    #r =geoprocess("tablebasicstats",TABLE=gvsig.currentTable(), FIELD=0)
+    #r =runalg("tablebasicstats",TABLE=gvsig.currentTable(), FIELD=0)
 
     #Without parameters label
-    #layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
-    #r = geoprocess("gridorientation",layer,0, PATH = "C://gvsig//perturbatepoints010.tif")
-    #r = geoprocess("gradientlines", layer, 1, 10, 1, PATH = "C://gvsig//perturbatepoints012.tif")
+
+    #layers = gvsig.currentView().getLayers()
+    ##r = runalg("gridorientation", layer, 0, PATH = "C://gvsig//perturbatepoints012.tif")
+    
+    #r = runalg("gridorientation", layer, 0)
+    #r = runalg("gradientlines", layers[0], 1, 10, 1, PATH = "C://gvsig//perturbatepoints012.shp")
+    #r = runalg("cva", "test_low", "test_low", "test_low", "test_low")
+    #r = runalg("cva", currentRaster(), currentRaster(), currentRaster(), currentRaster(),PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
+    
+    layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
+    r = runalg("gridorientation",layer,0, PATH = "C://gvsig//Grid_orientation.tif")
+    r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
+    print r2[0], r2[1]
     print "End"
 
