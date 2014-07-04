@@ -26,7 +26,7 @@ Now try to use it:
 
  1. You can download: `src/test_import_gvpy.py`
  2. Open gvSIG 2 - Tools - Scripting Composer 
- 3. Copy & Paste text inside: `test_import_gvpy.py`
+ 3. Copy text inside `test_import_gvpy.py` & Paste inside a new script
  4. Commets in every line of code inside test_import_gvpy.py, this will help you to understand how it works
  5. Just change the path's inside the script and try it!
 
