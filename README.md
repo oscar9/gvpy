@@ -20,6 +20,8 @@ Or read all my weekly reports in my blog: [\[weekly reports\]][2]
  2. Move `gvpy.py` to C:\Users\[name]\gvSIG\Plugins\org.gvsig.scripting.app.extension\lib
  3. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
  4. Write before your script: `import gvpy`
+ 5. You can download: 'src/test_import_gvpy.py' 
+ 6. Try it!
 
 ----------
 ###Src folder:
