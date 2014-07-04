@@ -17,11 +17,20 @@ Or read all my weekly reports in my blog: [\[weekly reports\]][2]
 
  1. You just need [gvSIG 2.x][3] 
  2. Download `src/gvpy.py`, you don't need more.
- 2. Move `gvpy.py` to C:\Users\[name]\gvSIG\Plugins\org.gvsig.scripting.app.extension\lib
- 3. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
- 4. Write before your script: `import gvpy`
- 5. You can download: 'src/test_import_gvpy.py' 
- 6. Try it!
+ 3. Move `gvpy.py` to C:\Users\[name]\gvSIG\Plugins\org.gvsig.scripting.app.extension\lib
+ 4. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
+ 5. Write before your script: `import gvpy`
+
+
+Now try to use it:
+
+ 1. You can download: `src/test_import_gvpy.py`
+ 2. Open gvSIG 2 - Tools - Scripting Composer 
+ 3. Copy & Paste text inside: `test_import_gvpy.py`
+ 4. Commets in every line of code inside test_import_gvpy.py, this will help you to understand how it works
+ 5. Just change the path's inside the script and try it!
+
+
 
 ----------
 ###Src folder:
@@ -36,7 +45,9 @@ This library will allow you to launch one geoprocess with your jython script.
 
 ##### Ex: Access to SEXTANTE
 ```
-    r = geoprocess("perturbatepointslayer", LAYER = layer1,MEAN = 5, STDDEV = 5 ) 
+    r = gvpy.runalg("perturbatepointslayer", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 ) 
+    r = gvpy.runalg("generaterandomnormal", EXTENT = [0,0,500,500], CELLSIZE=10, MEAN =0.5, STDDEV = 0.5)
+    v = gvpy.runalg("randomvector", 20, 1, EXTENT=gvsig.currentView(), PATH = "C://gvsig//random_vector.shp")
 ```
 
 
