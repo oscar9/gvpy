@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# File: gvpy.py
+# Version: v0.01
+#
+
+__author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
 
 import gvsig
 import geom
