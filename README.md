@@ -55,6 +55,7 @@ This library will allow you to launch one geoprocess with your jython script.
 
 
 ### II. gypy_library.py
+(I will develop this part in the next weeks)
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
 
 #####Ex: Shortcuts for gvSIG Scripting
