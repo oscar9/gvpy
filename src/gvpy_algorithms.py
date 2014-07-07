@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-#
-# File: gvpy.py
-# Version: v0.01
-#
-
-__author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
-
 import gvsig
 import geom
 import gvsig_raster
@@ -163,7 +155,11 @@ class Geoprocess:
               print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
           else:
               print "| Cellsize: ", AExtent.getCellSize()
-              
+          if 'CELLSIZEZ' in kwparams.keys():
+              AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
+              print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
+          else:
+              print "| Cellsize: ", AExtent.getCellSizeZ()
           algorithm.setAnalysisExtent(AExtent)
           print ("| Set Extent")
       else:
@@ -428,9 +424,9 @@ def main(*args):
     #r = runalg("cva", currentRaster(), currentRaster(), currentRaster(), currentRaster(),PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
     
     layerRaster = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
-    #r = runalg("gridorientation",layer,0, PATH = "C://gvsig//Grid_orientation.tif")
-    #r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
-    #print r2[0], r2[1]
+    r = runalg("gridorientation",layerRaster,0, PATH = "C://gvsig//Grid_orientation.tif",EXTENT=layerRaster, CELLSIZE=1, CELLSIZEZ=10)
+    r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
+    print r2[0], r2[1]
     print layerRaster
     print getProjectLayer("Vista1", "test_low")
     
