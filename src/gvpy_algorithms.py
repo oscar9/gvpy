@@ -105,9 +105,10 @@ class Geoprocess:
       
   def __defineExtent(self, algorithm, kwparams):
       """ Define Analysis Extent """
-      if 'EXTENT' in kwparams.keys():
+      if 'EXTENT' in kwparams.keys() and algorithm.getUserCanDefineAnalysisExtent() :
           frame = kwparams['EXTENT']
-          print ("|"+str(frame))
+          if isinstance(frame, str): frame = gvsig.currentView().getLayer(frame)
+          print ("|"+str(frame)+"||"+str(type(frame)))
           if isinstance(frame, str) and frame == 'VIEW' or isinstance(frame, gvsig.View):
               AExtent = AnalysisExtent()
               print "EXTENT ************ VIEW"
@@ -149,24 +150,50 @@ class Geoprocess:
           else:
               raise NameError("Not Extent Define")
 
-          #Set: cellsize
-          if 'CELLSIZE' in kwparams.keys():
-              AExtent.setCellSize(kwparams['CELLSIZE'])
-              print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
-          else:
-              print "| Cellsize: ", AExtent.getCellSize()
-          if 'CELLSIZEZ' in kwparams.keys():
-              AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
-              print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
-          else:
-              print "| Cellsize: ", AExtent.getCellSizeZ()
-          algorithm.setAnalysisExtent(AExtent)
-          print ("| Set Extent")
       else:
-          print ("| Not Extent")
+          print ("| Not Extent: No input data")
           #check
+          AExtent = AnalysisExtent()
+          #algorithm.setAnalysisExtent(AExtent)
           if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
-
+          print algorithm.getAnalysisExtent() 
+          print algorithm.isAutoExtent() 
+          print "set auto view"
+          AExtent = AnalysisExtent()
+          print "EXTENT ************ VIEW"
+          view = gvsig.currentView()
+          envelope = view.getMap().getFullEnvelope()
+          print "Setting AExtent...",
+          try:
+              print "View"
+              xlow = envelope.getLowerCorner().getX()
+              ylow = envelope.getLowerCorner().getY()
+              xup = envelope.getUpperCorner().getX()
+              yup = envelope.getUpperCorner().getY()
+              print xlow, ylow, xup,yup
+          except:
+              print "Default"
+              xlow, ylow, xup, yup = 0,0,100,100
+          frame = Rectangle2D.Double(xlow, ylow, xup, yup)
+          AExtent.setXRange(xlow, xup, False)
+          AExtent.setYRange(ylow, yup, False)
+          AExtent.setZRange(0, 0, False)
+          algorithm.setAnalysisExtent(AExtent)
+          
+      #Set: cellsize
+      if 'CELLSIZE' in kwparams.keys():
+          AExtent.setCellSize(kwparams['CELLSIZE'])
+          print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
+      else:
+          print "| Cellsize: ", AExtent.getCellSize()
+      if 'CELLSIZEZ' in kwparams.keys():
+          AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
+          print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
+      else:
+          print "| Cellsize: ", AExtent.getCellSizeZ()
+      algorithm.setAnalysisExtent(AExtent)
+      print ("| Set Extent")
+      
   def __defineOutput(self, algorithm, kwparams):
     if 'PATH' in kwparams.keys():
         path = kwparams['PATH']
@@ -297,7 +324,7 @@ def runalg(algorithmId,*params, **kwparams):
     elif isinstance(value,FLayer):
         print "|\t Value:", value.getName()
         print "|\t\t", value.getFileName()[0]
-        #Not yet: Waiting for OUTVIEW
+        #Not yet: Waiting for new loadRasterLayer that can set OUTVIEW
         value = gvsig_raster.loadRasterLayer(value.getFileName()[0])
         outList.append(value)
     else:
@@ -423,19 +450,34 @@ def main(*args):
     #r = runalg("cva", "test_low", "test_low", "test_low", "test_low")
     #r = runalg("cva", currentRaster(), currentRaster(), currentRaster(), currentRaster(),PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
     
-    layerRaster = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
-    r = runalg("gridorientation",layerRaster,0, PATH = "C://gvsig//Grid_orientation.tif",EXTENT=layerRaster, CELLSIZE=1, CELLSIZEZ=10)
-    r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
-    print r2[0], r2[1]
-    print layerRaster
-    print getProjectLayer("Vista1", "test_low")
+    #layerRaster = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
+    #r = runalg("gridorientation",layerRaster,0, PATH = "C://gvsig//Grid_orientation.tif",EXTENT=layerRaster, CELLSIZE=1, CELLSIZEZ=10)
+    #r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
+    #print r2[0], r2[1]
+    #print layerRaster
+    #print getProjectLayer("Vista1", "test_low")
     
     
-    layer = getProjectLayer("Vista1", "as.shp")
-    extent = getProjectLayer("Vista1", "analisis_extent")
-    runalg("difference", "as.shp", "vista2_testeo.shp",PATH="C:/gvsig/recorte_extent.shp",EXTENT=[100, 100, 0, 540, 500, 0])
-    runalg("difference", "vista2_testeo.shp",layer, PATH="C:/gvsig/recorte_extent_2.shp",EXTENT=layer) #, OUTVIEW="Nueva")
+    #layer = getProjectLayer("Vista1", "as.shp")
+    #extent = getProjectLayer("Vista1", "analisis_extent")
+    #runalg("difference", "as.shp", "vista2_testeo.shp", PATH="C:/gvsig/recorte_extent.shp", EXTENT=[100, 100, 0, 540, 500, 0])
+    #runalg("difference", "vista2_testeo.shp", layer, PATH="C:/gvsig/recorte_extent_2.shp", EXTENT=layer, OUTVIEW="Nueva")
     #r = runalg("tablebasicstats", "species", 0)
     #print r.encode("UTF-8")
+    print gvsig.currentLayer()
+    algHelp("generaterandomnormal")
+    r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
+    r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
+    r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
+    r = runalg("gradientlines", r, 1, 100, 1)
+    
+    v1 = runalg("randomvector",10, TYPE_POLYGON, EXTENT=[0,0,0,500,500,0])
+    v2 = runalg("randomvector", 5, TYPE_POLYGON, EXTENT=v1)
+    v3 = runalg("difference", v1, v2, PATH="C:/gvsig/Diferencia.shp")
+    v4 = runalg("randomvector", 5, 0, PATH="C:/gvsig/randomvector.shp", EXTENT=v3)
+    v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector")
+    #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
+    algHelp("tablebasicstats")
+    v7 = runalg("gvSIG-buffer", "Puntos_de_locales_01.shp", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig01.shp")
     print "End"
 

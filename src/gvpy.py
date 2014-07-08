@@ -34,6 +34,7 @@ from org.gvsig.fmap.mapcontext.layers import FLayer
 from java.awt.geom import RectangularShape, Rectangle2D
 from org.gvsig.fmap.mapcontext.layers.vectorial import FLyrVect
 from org.gvsig.raster.fmap.layers import DefaultFLyrRaster
+
 #Constant
 TYPE_POLYGON = 0
 TYPE_LINE = 1
@@ -55,16 +56,19 @@ class Geoprocess:
         self.__algorithms[str(name)] = algorithms.get(name)
 
   def __createSextanteLayer(self, layer):
+      """ gvsig layer -> SEXTANTE """
       slayer = FlyrVectIVectorLayer()
       slayer.create(layer)
       return slayer
     
   def __createSextanteRaster(self, layer):
+      """ gvsig raster -> SEXTANTE """
       rlayer = FLyrRasterIRasterLayer()
       rlayer.create(layer)
       return rlayer
 
   def __createSextanteTable(self, layer):
+      """ gvsig table -> SEXTANTE """
       table = TableDocumentITable()
       table.create(layer)
       return table
@@ -73,7 +77,7 @@ class Geoprocess:
       return self.__algorithms
     
   def __defineParameters(self, algorithm, kwparams):
-      """ Input parameters """
+      """ Define input parameters """
       params = algorithm.getParameters()
       for i in range(0,params.getNumberOfParameters()):
           param = params.getParameter(i)
@@ -81,35 +85,38 @@ class Geoprocess:
               paramValue = kwparams[param.getParameterName()]
           else:
               paramValue = kwparams[i]
-          #print "PARAMETRO", param, param.getParameterTypeName()
-          #Vector a SEXTANTE
+              
+          #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
                   layer = gvsig.currentView().getLayer(paramValue)
                   paramValue = self.__createSextanteLayer(layer())
               else:
                   paramValue = self.__createSextanteLayer(paramValue())
-
-          #Raster a SEXTANTE
+          #Raster to SEXTANTE
           elif param.getParameterTypeName() == "Raster Layer":
               if isinstance(paramValue, str):
                   layer = gvsig.currentView().getLayer(paramValue)
-                  print layer
                   paramValue = self.__createSextanteRaster(layer)
               else:
                   paramValue = self.__createSextanteRaster(paramValue)
-          #Tabla a SEXTANTE
+          #Table to SEXTANTE
           elif param.getParameterTypeName() == "Table":
-            paramValue = self.__createSextanteTable(paramValue())
+              if isinstance(paramValue, str):
+                  layer = gvsig.currentProject().getTable(paramValue)
+                  paramValue = self.__createSextanteTable(layer())
+              else:
+                  paramValue = self.__createSextanteTable(paramValue())
+
+          #Set parameter value
           param.setParameterValue(paramValue)
       
   def __defineExtent(self, algorithm, kwparams):
       """ Define Analysis Extent """
-      if 'EXTENT' in kwparams.keys():
-          #print ("|"+str(kwparams.keys()))
+      if 'EXTENT' in kwparams.keys() and algorithm.getUserCanDefineAnalysisExtent() :
           frame = kwparams['EXTENT']
-          print ("|"+str(frame))
-          #print "TIPO DE FRAME", type(frame)
+          if isinstance(frame, str): frame = gvsig.currentView().getLayer(frame)
+          print ("|"+str(frame)+"||"+str(type(frame)))
           if isinstance(frame, str) and frame == 'VIEW' or isinstance(frame, gvsig.View):
               AExtent = AnalysisExtent()
               print "EXTENT ************ VIEW"
@@ -120,50 +127,81 @@ class Geoprocess:
               ylow = envelope.getLowerCorner().getY()
               xup = envelope.getUpperCorner().getX()
               yup = envelope.getUpperCorner().getY()
-              #print xlow, ylow, xup, yup
               frame = Rectangle2D.Double(xlow, ylow, xup, yup)
-              #print frame
-              AExtent.addExtent(frame)
-          #elif isinstance(frame, raster):
+              #AExtent.addExtent(frame)
+              AExtent.setXRange(xlow, xup, False)
+              AExtent.setYRange(ylow, yup, False)
+              AExtent.setZRange(0, 0, False)
+              print "EXTENSIONNNNNNNNNNNNNNNNNNNNNN", AExtent
+              
           elif isinstance(frame, DefaultFLyrRaster):
               print "EXTENT ************ RASTER"
               layer = self.__createSextanteRaster(frame)
               AExtent = AnalysisExtent(layer)
+              
           elif isinstance(frame, list):
               print "EXTENT ************ LIST"
               AExtent = AnalysisExtent()
-              xlow, ylow, xup, yup  = frame[0], frame[1], frame[2], frame[3]
+              xlow, ylow, zlow, xup, yup, zup  = frame[0], frame[1], frame[2], frame[3], frame[4], frame[5]
               frame = Rectangle2D.Double(xlow, ylow, xup, yup)
               print frame
-              AExtent.addExtent(frame)
+              #AExtent.addExtent(frame)
+              AExtent.setXRange(xlow, xup, False)
+              AExtent.setYRange(ylow, yup, False)
+              AExtent.setZRange(zlow, zup, False)
+              
           elif isinstance(frame, gvsig.Layer):
               print "EXTENT ************ layer"
               layer = self.__createSextanteLayer(frame())
               AExtent = AnalysisExtent(layer)
-              """
-              envelope = frame.data().getEnvelope()
+              
+          else:
+              raise NameError("Not Extent Define")
+
+      else:
+          print ("| Not Extent: No input data")
+          #check
+          AExtent = AnalysisExtent()
+          #algorithm.setAnalysisExtent(AExtent)
+          if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
+          print algorithm.getAnalysisExtent() 
+          print algorithm.isAutoExtent() 
+          print "set auto view"
+          AExtent = AnalysisExtent()
+          print "EXTENT ************ VIEW"
+          view = gvsig.currentView()
+          envelope = view.getMap().getFullEnvelope()
+          print "Setting AExtent...",
+          try:
+              print "View"
               xlow = envelope.getLowerCorner().getX()
               ylow = envelope.getLowerCorner().getY()
               xup = envelope.getUpperCorner().getX()
               yup = envelope.getUpperCorner().getY()
-              """
-          else:
-              raise NameError("Not Extent Define")
-
-          #Set: cellsize
-          if 'CELLSIZE' in kwparams.keys():
-              AExtent.setCellSize(kwparams['CELLSIZE'])
-              print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
-          else:
-              print "| Cellsize: ", AExtent.getCellSize()
-              
+              print xlow, ylow, xup,yup
+          except:
+              print "Default"
+              xlow, ylow, xup, yup = 0,0,100,100
+          frame = Rectangle2D.Double(xlow, ylow, xup, yup)
+          AExtent.setXRange(xlow, xup, False)
+          AExtent.setYRange(ylow, yup, False)
+          AExtent.setZRange(0, 0, False)
           algorithm.setAnalysisExtent(AExtent)
-          print ("| Set Extent")
+          
+      #Set: cellsize
+      if 'CELLSIZE' in kwparams.keys():
+          AExtent.setCellSize(kwparams['CELLSIZE'])
+          print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
       else:
-          print ("| Not Extent")
-          #???
-          if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
-
+          print "| Cellsize: ", AExtent.getCellSize()
+      if 'CELLSIZEZ' in kwparams.keys():
+          AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
+          print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
+      else:
+          print "| Cellsize: ", AExtent.getCellSizeZ()
+      algorithm.setAnalysisExtent(AExtent)
+      print ("| Set Extent")
+      
   def __defineOutput(self, algorithm, kwparams):
     if 'PATH' in kwparams.keys():
         path = kwparams['PATH']
@@ -238,13 +276,13 @@ class Geoprocess:
     algorithm = self.getAlgorithms()[algorithmId]
     #print algorithm.getAlgorithmAsCommandLineSentences()
 
-    #Parametros de entrada
+    #Input params
     self.__defineParameters(algorithm, kwparams)
 
-    #Extension
+    #Analisys Extension
     self.__defineExtent(algorithm, kwparams)
     
-    #Archivo de salida
+    #Output files
     self.__defineOutput(algorithm, kwparams)
     
 
@@ -261,9 +299,8 @@ class Geoprocess:
     correctValues = algorithm.hasCorrectParameterValues()
     print "| Parameter values:", correctValues
     if not correctValues: raise NameError("Not correct values")
-    #algorithm.preprocessForModeller()
 
-    #Ejecutar algorithm
+    #Exec algorithm
     self.__executeAlgorithm(algorithm)
     
     #Output objects
@@ -274,9 +311,7 @@ def runalg(algorithmId,*params, **kwparams):
   geoprocess = Geoprocess()
   for i in range(0,len(params)):
       kwparams[i]=params[i]
-  #print kwparams
   r = geoprocess.execute(algorithmId, kwparams )
-  #view = gvsig.currentView()
   if r == None: return
   outList = []
   print "| Output layers: "
@@ -287,13 +322,17 @@ def runalg(algorithmId,*params, **kwparams):
         print "|\t Value:", value.getName()
         path = value.getDataStore().getFullName()
         print "|\t\tPath: ", path
-        crs = gvsig.currentView().getProjectionCode()
-        value = loadShapeFileFalse(str(path),crs)
+        if "OUTVIEW" in kwparams:
+            value = loadShapeFileNew(str(path), view=kwparams["OUTVIEW"])
+        else: 
+            value = loadShapeFileNew(str(path))
+        
         outList.append(value)
     #elif isinstance(value, IRasterLayer):
     elif isinstance(value,FLayer):
         print "|\t Value:", value.getName()
         print "|\t\t", value.getFileName()[0]
+        #Not yet: Waiting for new loadRasterLayer that can set OUTVIEW
         value = gvsig_raster.loadRasterLayer(value.getFileName()[0])
         outList.append(value)
     else:
@@ -309,13 +348,15 @@ def runalg(algorithmId,*params, **kwparams):
   else:
       return None
   
-def loadShapeFileFalse(shpFile, CRS='CRS:84'):
+def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=gvsig.currentView()):
     try:
         CRS = gvsig.currentProject().getProjectionCode()
     except:
         pass
     layer = gvsig.loadLayer('Shape', shpFile=shpFile, CRS=CRS)
-    gvsig.currentView().addLayer(layer)
+    if isinstance(view,str): view = gvsig.currentProject().getView(view)
+    view.addLayer(layer)
+    layer.setActive(active)
     return gvsig.Layer(layer)
     
 def algHelp(geoalgorithmId):
@@ -353,6 +394,20 @@ def currentActive():
     lyrlist = [ layers[i] for i in range(0, layers.__len__())]
     for i in lyrlist:
         if i.isActive(): return i
+    return None
+    
+def getProjectLayer(view,layer):
+    """Get vector layer or raster"""
+    try:
+        return gvsig.currentProject().getView(view).getLayer(layer)
+    except:
+        for i in gvsig.currentProject().getView(view).getLayers():
+            if i.name == layer: return i
+            
+def getProjectTable(table):
+    """Get table"""
+    return gvsig.currentProject().getTable(table)
+    
 def main(*args):
     #geoprocessSearch(" ")
     #geoprocessHelp("closegapsnn")
@@ -403,9 +458,34 @@ def main(*args):
     #r = runalg("cva", "test_low", "test_low", "test_low", "test_low")
     #r = runalg("cva", currentRaster(), currentRaster(), currentRaster(), currentRaster(),PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
     
-    layer = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
-    r = runalg("gridorientation",layer,0, PATH = "C://gvsig//Grid_orientation.tif")
-    r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
-    print r2[0], r2[1]
+    #layerRaster = gvsig_raster.loadRasterLayer('c:/gvsig/test_low.tif')
+    #r = runalg("gridorientation",layerRaster,0, PATH = "C://gvsig//Grid_orientation.tif",EXTENT=layerRaster, CELLSIZE=1, CELLSIZEZ=10)
+    #r2 = runalg("cva", r, r, r, r, PATH=["C:/gvsig/1.tif","C:/gvsig/2.tif"])
+    #print r2[0], r2[1]
+    #print layerRaster
+    #print getProjectLayer("Vista1", "test_low")
+    
+    
+    #layer = getProjectLayer("Vista1", "as.shp")
+    #extent = getProjectLayer("Vista1", "analisis_extent")
+    #runalg("difference", "as.shp", "vista2_testeo.shp", PATH="C:/gvsig/recorte_extent.shp", EXTENT=[100, 100, 0, 540, 500, 0])
+    #runalg("difference", "vista2_testeo.shp", layer, PATH="C:/gvsig/recorte_extent_2.shp", EXTENT=layer, OUTVIEW="Nueva")
+    #r = runalg("tablebasicstats", "species", 0)
+    #print r.encode("UTF-8")
+    print gvsig.currentLayer()
+    algHelp("generaterandomnormal")
+    r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
+    r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
+    r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
+    r = runalg("gradientlines", r, 1, 100, 1)
+    
+    v1 = runalg("randomvector",10, TYPE_POLYGON, EXTENT=[0,0,0,500,500,0])
+    v2 = runalg("randomvector", 5, TYPE_POLYGON, EXTENT=v1)
+    v3 = runalg("difference", v1, v2, PATH="C:/gvsig/Diferencia.shp")
+    v4 = runalg("randomvector", 5, 0, PATH="C:/gvsig/randomvector.shp", EXTENT=v3)
+    v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector")
+    #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
+    algHelp("tablebasicstats")
+    v7 = runalg("gvSIG-buffer", "Puntos_de_locales_01.shp", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig01.shp")
     print "End"
 
