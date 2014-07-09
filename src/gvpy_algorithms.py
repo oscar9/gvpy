@@ -478,6 +478,6 @@ def main(*args):
     v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector")
     #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
     algHelp("tablebasicstats")
-    v7 = runalg("gvSIG-buffer", "Puntos_de_locales_01.shp", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig01.shp")
+    v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig010.shp")
     print "End"
 
