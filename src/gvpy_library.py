@@ -3,7 +3,6 @@ import gvsig
 import geom
 
 def main(*args):
-    layer = gvsig.currentLayer()
     #showFields(gvsig.currentLayer())
     #removeField(layer, "campo3")
     #removeField(layer, "campo5")
@@ -26,7 +25,7 @@ def main(*args):
     addField(layer,"campo3")
     modifyFeatures(layer, "campo3", "nuevo poligono")
     """
-    
+    """
     #Create shapes
     layer1 = newLayer(layer,"C:/gvsig/point_shape.shp", 1)
     layer2 = newLayer(layer,"C:/gvsig/line_shape.shp", 2)
@@ -52,24 +51,66 @@ def main(*args):
     
     ##Execute SEXTANTE
     #r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 )
+    """
+    layer = gvsig.currentView().getLayer("line_04.shp")
+    #newLayer(layer, "C:/gvsig/gvpy_test006.shp")
+    #layer2 = copyLayer(layer, "C:/gvsig/gvpy_copylayer_012.shp")
+    #v = copyLayer(layer, "C:/gvpy_copylayer_new_06.shp")
+    layer = gvsig.currentView().getLayer("gvpy_copylayer_new_06")
+    #addFeature(v, "Camino", [[50,00],[50,50],[10,10],[0,1],[50,18]])
+
+    #Basics field
+    """
+    addField(v, "Direccion")
+    modifyFeatures(v, "Direccion", "Av")
+    removeField(v, "Direccion")
+    """
+
+    #Advanced field
+    removeField(layer, "Distance")
+    addField(layer, "Distance")
+    modifyFeatures(layer, "Distance", "90")
+    modifyField(layer, "Distance", "LONG")
+    addFeature(layer, "Ruta01", 0, [[50,0],[100,0]])
+    for feature in layer.features():
+        perimeter = feature.geometry().perimeter()
+        modifyFeature(layer, feature, "Distance", perimeter)
     pass
 
+def copyLayerFeatures2Layer(layer1, layer2):
+    for i in layer1.features():
+        layer2.append(i.getValues())
+    layer2.commit()
+        
+def copyLayer(layer, path):
+    output = newLayer(layer, path)
+    copyLayerFeatures2Layer(layer, output)
+    #addLayerView(output)
+    return output
     
-def newLayer(layer, path, geometryType):
-    #path = "C:/gvsig/test03.shp"
-    CRS= gvsig.currentProject().getProjectionCode()
+def newLayer(layer, path, geometryType=None):
+    CRS = layer.getProjectionCode()
     schema = gvsig.createSchema(layer.getSchema())
-    output = gvsig.createShape( schema, path, CRS=CRS, geometryType = geometryType )
+    if geometryType==None: geometryType = layer.getTypeVectorLayer().getType()
+    output = gvsig.createShape( schema, path, CRS=CRS, geometryType=geometryType )
     gvsig.currentView().addLayer(output)
     return output
+    
+def addLayerView(layer):
+    gvsig.currentView().addLayer(layer)
     
 def addFeature(layer, *params, **kwparams):
     #IN: layer, feature params + geometry
     typeLayer = layer.getTypeVectorLayer().name
-    if kwparams != {}:
-        layer.append(kwparams)
-        layer.commit()
-        return
+    #if kwparams != {}:
+    #    layer.append(kwparams)
+    #    layer.commit()
+    #    return
+
+    if "COMMIT" in kwparams:
+        pass
+    else:
+        COMMIT=1
     if params != ():
         schValues = layer.getSchema().getAttrNames()
         values = {}
@@ -77,12 +118,13 @@ def addFeature(layer, *params, **kwparams):
         value = itera.next()
         for sch in schValues: 
             #Si el campo a modificar es una geometria
-            #print "Comprobaciï¿½n:", sch, isinstance(value, list)
+            #print "Comprobación:", sch, isinstance(value, list)
             #re comprobacion si es campo geometry
             #bug: Comprobar si es lista o objeto geom  en primer if
             #... sch == "Geometry" and ES UNA LISTA
             #... sino copia el valor directamente: caso de pasar geometrias
             if sch == "GEOMETRY":
+                print typeLayer
                 if typeLayer == "Point2D":
                     if isinstance(value, list):
                         values[sch] = geom.createPoint(value[0],value[1])
@@ -96,9 +138,11 @@ def addFeature(layer, *params, **kwparams):
                 values[sch] = value
             try:
                 value = itera.next()
-            except: break
+            except: 
+                break
         layer.append(values)
-        layer.commit()
+        if COMMIT==1: layer.commit()
+    print "Add feature ", params, " to ", layer
         
 def list2geompoly(listPoints):
     #IN: list[[x,y],...]
@@ -118,14 +162,15 @@ def list2geomcurve(listPoints):
         geometry.addVertex(geom.createPoint(point[0],point[1]))
     return geometry
     
-def modifyFeatures(layer, field, value):
+def modifyFeatures(layer, field, value, COMMIT=1):
     #IN: layer, field, new value
     features = layer.features()
     for feature in features:
         feature.edit()
         feature.set(field, value)
         layer.update(feature)
-    layer.commit()
+    if COMMIT==1: layer.commit()
+    print "Modify feature ", layer.name, field, value
         
 def showFields(layer):
     #IN: layer
@@ -142,7 +187,28 @@ def addField(layer,field, sType = "STRING",iSize=20):
     layer.edit()
     layer.updateSchema(schema)
     layer.commit()
+    print "Add field ", field, " to ", layer.name
     return layer
+    
+def modifyField(layer, field, iType="STRING", iSize=20):
+    temp = []
+    for i in layer.features():
+        temp.append(i.get(field))
+    removeField(layer, field)
+    addField(layer, field, iType, iSize)
+    n = 0
+    for i in layer.features():
+        modifyFeature(layer, i, field, temp[n],COMMIT=0)
+        n += 1
+    layer.commit()
+    print "Modify field type to: ", field, " in ", layer.name
+    
+def modifyFeature(layer, feature, field, value, COMMIT=1):
+    feature.edit()
+    feature.set(field, value)
+    layer.update(feature)
+    print "Modify Feature field: ", field , " to ", value
+    if COMMIT==1: layer.commit()
 
 def removeField(layer, field):
     #IN: layer, field
