@@ -35,7 +35,7 @@ Now try to use it:
  4. Copy text inside `test_import_gvpy.py` & Paste inside a new script, execute!
  5. Commets in every line of code inside test_import_gvpy.py, this will help you to understand how it works
 
-
+![Result of test_import_gvpy.py][5]
 
 ----------
 ###Src folder:
@@ -102,3 +102,4 @@ And my weekly reports: http://masquesig.com/category/gsoc-2/
   [2]: http://masquesig.com/category/gsoc-2/
   [3]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
   [4]: https://raw.githubusercontent.com/oscar9/gvpy/master/data/images/modelosextante-scripting.png
+  [5]: https://raw.githubusercontent.com/oscar9/gvpy/master/data/images/test_import_gvpy.png
