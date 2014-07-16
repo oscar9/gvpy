@@ -75,6 +75,19 @@ For now, this library will be to develop easy access to the scripting functions.
     addField(layer1,"Name") 
     removeField(layer1,"Name") 
 ```
+
+### III. xml_model2script.py
+
+Script for gvSIG 2 that allows export from SEXTANTE.model to Python Script with one click.
+
+![Export SEXTANTE.model to Script][4]
+
+
+
+
+
+
+#Info
 You can find more info about what is gvpy here: http://oscar9.github.io/gvpy/
 
 And my weekly reports: http://masquesig.com/category/gsoc-2/
@@ -83,3 +96,4 @@ And my weekly reports: http://masquesig.com/category/gsoc-2/
   [1]: http://oscar9.github.io/gvpy/
   [2]: http://masquesig.com/category/gsoc-2/
   [3]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
+  [4]: https://github.com/oscar9/gvpy/blob/master/data/images/modelosextante-scripting.png
