@@ -1,6 +1,5 @@
 #GSoC Project 2014: 
 ##Access to geoprocessing tools with gvSIG 2.x Scripting Framework 
-----------
 **Working for gvSIG and OSGeo Foundation**
 
 ----------
@@ -12,7 +11,7 @@ Todas las opciones disponibles para lanzar geoprocesos desde el Módulo de Scrip
 
 ----------
 
-
+##Install
 ###Developing for gvSIG 2.x
  
 **Do you want to know more about what am i doing?**
@@ -27,7 +26,7 @@ Or read all my weekly reports in my blog: [\[weekly reports\]][2]
  4. Open gvSIG 2.1 Desktop, and go to Scripting Composer or Jython Console
  5. Write before your script: `import gvpy`
 
-
+##Test
 Now try to use it:
 
  1. You can download: `src/test_import_gvpy.py`
