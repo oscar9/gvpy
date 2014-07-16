@@ -3,6 +3,12 @@
 ----------
 **Working for gvSIG and OSGeo Foundation**
 
+----------
+
+##GVPY: GUIA DE USO en Español
+https://github.com/oscar9/gvpy/blob/master/gvpy_guia_de_uso.md
+
+Todas las opciones disponibles para lanzar geoprocesos desde el Módulo de Scripting
 
 ----------
 
