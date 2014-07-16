@@ -46,7 +46,7 @@ This library will allow you to launch one geoprocess with your jython script.
 ##### Ex: Access to SEXTANTE
 ```
     r = gvpy.runalg("perturbatepointslayer", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 ) 
-    r = gvpy.runalg("generaterandomnormal", EXTENT = [0,0,500,500], CELLSIZE=10, MEAN =0.5, STDDEV = 0.5)
+    r = gvpy.runalg("generaterandomnormal", EXTENT = [0,0,0,500,500,0], CELLSIZE=10, MEAN =0.5, STDDEV = 0.5)
     v = gvpy.runalg("randomvector", 20, 1, EXTENT=gvsig.currentView(), PATH = "C://gvsig//random_vector.shp")
 ```
 
