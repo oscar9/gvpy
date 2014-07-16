@@ -5,7 +5,6 @@
 #
 
 __author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
-
 import gvsig
 import geom
 import gvsig_raster
@@ -85,7 +84,16 @@ class Geoprocess:
               paramValue = kwparams[param.getParameterName()]
           else:
               paramValue = kwparams[i]
-              
+          #print "*************TESTING***************"
+          #Tranform STR to NUMERIC or anytype of value
+          cond1 = (str(param) == "Numerical Value")
+          cond2 = (str(param) == "Selection")
+          cond3 = isinstance(paramValue, str)
+          if (cond1 or cond2) and cond3:
+              print paramValue,
+              paramValue = float(paramValue)
+              print "YES", paramValue
+          #print "***********ENDTESTING**************"
           #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
@@ -119,7 +127,7 @@ class Geoprocess:
           #print ("|"+str(frame)+"||"+str(type(frame)))
           if isinstance(frame, str) and frame == 'VIEW' or isinstance(frame, gvsig.View):
               AExtent = AnalysisExtent()
-              print "EXTENT ************ VIEW"
+              print "| EXTENT from VIEW"
               if isinstance(frame, gvsig.View): view = frame
               else: view = gvsig.currentView()
               envelope = view.getMap().getFullEnvelope()
@@ -153,7 +161,7 @@ class Geoprocess:
           ##print algorithm.getAnalysisExtent() 
           ##print algorithm.isAutoExtent() 
           AExtent = AnalysisExtent()
-          print "| EXTENT ************ VIEW"
+          print "| EXTENT from VIEW"
           envelope = gvsig.currentView().getMap().getFullEnvelope()
           print "| Setting AExtent: ",
           try:
@@ -161,11 +169,11 @@ class Geoprocess:
               ylow = envelope.getLowerCorner().getY()
               xup = envelope.getUpperCorner().getX()
               yup = envelope.getUpperCorner().getY()
-              print "View: ",
+              print "| View: ",
               print xlow, ylow, xup,yup
           except:
               xlow, ylow, xup, yup = 0,0,100,100
-              print "Default:", xlow, ylow, xup, yup
+              print "| Default:", xlow, ylow, xup, yup
           frame = Rectangle2D.Double(xlow, ylow, xup, yup)
           AExtent.setXRange(xlow, xup, False)
           AExtent.setYRange(ylow, yup, False)
@@ -469,7 +477,7 @@ def main(*args):
     #runalg("difference", "vista2_testeo.shp", layer, PATH="C:/gvsig/recorte_extent_2.shp", EXTENT=layer, OUTVIEW="Nueva")
     #r = runalg("tablebasicstats", "species", 0)
     #print r.encode("UTF-8")
-    """
+    
     print gvsig.currentLayer()
     algHelp("generaterandomnormal")
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
@@ -484,7 +492,160 @@ def main(*args):
     v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector")
     #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
     algHelp("tablebasicstats")
-    v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig012.shp")
-    """
+    v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig013.shp")
     v5 = runalg("randomvector", 100, 2, EXTENT=[0,0,0,500,500,0])
-    print "End"
+    
+    #Test for model sextante
+    v5 = runalg("randomvector", 10, 2, EXTENT=[0,0,0,500,500,0])
+    v5 = runalg("randomvector", "5", 2, EXTENT=[0,0,0,500,500,0])
+    
+    print "end"
+
+def copyLayerFeatures2Layer(layer1, layer2):
+    for i in layer1.features():
+        layer2.append(i.getValues())
+    layer2.commit()
+        
+def copyLayer(layer, path):
+    output = newLayer(layer, path)
+    copyLayerFeatures2Layer(layer, output)
+    #addLayerView(output)
+    return output
+    
+def newLayer(layer, path, geometryType=None):
+    CRS = layer.getProjectionCode()
+    schema = gvsig.createSchema(layer.getSchema())
+    if geometryType==None: geometryType = layer.getTypeVectorLayer().getType()
+    output = gvsig.createShape( schema, path, CRS=CRS, geometryType=geometryType )
+    gvsig.currentView().addLayer(output)
+    return output
+    
+def addLayerView(layer):
+    gvsig.currentView().addLayer(layer)
+    
+def addFeature(layer, *params, **kwparams):
+    #IN: layer, feature params + geometry
+    typeLayer = layer.getTypeVectorLayer().name
+    #if kwparams != {}:
+    #    layer.append(kwparams)
+    #    layer.commit()
+    #    return
+
+    if "COMMIT" in kwparams:
+        pass
+    else:
+        COMMIT=1
+    if params != ():
+        schValues = layer.getSchema().getAttrNames()
+        values = {}
+        itera = iter((list(params)))
+        value = itera.next()
+        for sch in schValues: 
+            #Si el campo a modificar es una geometria
+            #print "Comprobación:", sch, isinstance(value, list)
+            #re comprobacion si es campo geometry
+            #bug: Comprobar si es lista o objeto geom  en primer if
+            #... sch == "Geometry" and ES UNA LISTA
+            #... sino copia el valor directamente: caso de pasar geometrias
+            if sch == "GEOMETRY":
+                print typeLayer
+                if typeLayer == "Point2D":
+                    if isinstance(value, list):
+                        values[sch] = geom.createPoint(value[0],value[1])
+                elif typeLayer == "MultiCurve2D":
+                    if isinstance(value, list):
+                        values[sch] = list2geomcurve(value)
+                elif typeLayer == "MultiSurface2D":
+                    if isinstance(value, list):
+                        values[sch] = list2geompoly(value)
+            else:
+                values[sch] = value
+            try:
+                value = itera.next()
+            except: 
+                break
+        layer.append(values)
+        if COMMIT==1: layer.commit()
+    print "Add feature ", params, " to ", layer
+        
+def list2geompoly(listPoints):
+    #IN: list[[x,y],...]
+    #OUT: geometry polygon
+    geometry = geom.createGeometry(3)
+    for point in listPoints:
+        geometry.addVertex(geom.createPoint(point[0],point[1]))
+    if listPoints[0] != listPoints[len(listPoints)-1]: 
+        geometry.addVertex(geom.createPoint(listPoints[0][0], listPoints[0][1]))
+    return geometry
+    
+def list2geomcurve(listPoints):
+    #IN: list [[x,y],...]
+    #OUT: geometry line
+    geometry = geom.createGeometry(2)
+    for point in listPoints:
+        geometry.addVertex(geom.createPoint(point[0],point[1]))
+    return geometry
+    
+def modifyFeatures(layer, field, value, COMMIT=1):
+    #IN: layer, field, new value
+    features = layer.features()
+    for feature in features:
+        feature.edit()
+        feature.set(field, value)
+        layer.update(feature)
+    if COMMIT==1: layer.commit()
+    print "Modify feature ", layer.name, field, value
+        
+def showFields(layer):
+    #IN: layer
+    #OUT: str(atributos)
+    print layer.getSchema().getAttrNames()
+    
+def addField(layer,field, sType = "STRING",iSize=20):
+    #IN: layer, field, *sType, *iSize)
+    #OUT: layer
+    #addField(layer, "nombre")
+    schema = gvsig.createSchema(layer.getSchema())
+    schema.modify()
+    if isinstance(field,str): schema.append(field,sType,iSize)
+    layer.edit()
+    layer.updateSchema(schema)
+    layer.commit()
+    print "Add field ", field, " to ", layer.name
+    return layer
+    
+def modifyField(layer, field, iType="STRING", iSize=20):
+    temp = []
+    for i in layer.features():
+        temp.append(i.get(field))
+    removeField(layer, field)
+    addField(layer, field, iType, iSize)
+    n = 0
+    for i in layer.features():
+        modifyFeature(layer, i, field, temp[n],COMMIT=0)
+        n += 1
+    layer.commit()
+    print "Modify field type to: ", field, " in ", layer.name
+    
+def modifyFeature(layer, feature, field, value, COMMIT=1):
+    feature.edit()
+    feature.set(field, value)
+    layer.update(feature)
+    print "Modify Feature field: ", field , " to ", value
+    if COMMIT==1: layer.commit()
+
+def removeField(layer, field):
+    #IN: layer, field
+    #OUT: layer
+    #removeField(layer, "apellido")
+    print "Campo %s eliminado" % (str(field))
+    schema = layer.getSchema()
+    schema.modify()
+    if isinstance(field,str): schema.remove(field)
+    else: return 
+    layer.edit()
+    layer.updateSchema(schema)
+    layer.commit()
+    return layer
+    
+

@@ -1,6 +1,7 @@
 
 import gvsig
 import geom
+import gvpy
 
 def main(*args):
     #showFields(gvsig.currentLayer())
@@ -52,11 +53,11 @@ def main(*args):
     ##Execute SEXTANTE
     #r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 )
     """
-    layer = gvsig.currentView().getLayer("line_04.shp")
+    #layer = gvsig.currentView().getLayer("line_04.shp")
     #newLayer(layer, "C:/gvsig/gvpy_test006.shp")
     #layer2 = copyLayer(layer, "C:/gvsig/gvpy_copylayer_012.shp")
     #v = copyLayer(layer, "C:/gvpy_copylayer_new_06.shp")
-    layer = gvsig.currentView().getLayer("gvpy_copylayer_new_06")
+    #layer = gvsig.currentView().getLayer("gvpy_copylayer_new_06")
     #addFeature(v, "Camino", [[50,00],[50,50],[10,10],[0,1],[50,18]])
 
     #Basics field
@@ -65,16 +66,23 @@ def main(*args):
     modifyFeatures(v, "Direccion", "Av")
     removeField(v, "Direccion")
     """
-
+    #New shapes
+    #layer = gvpy.runalg("randomvector", 20, gvpy.TYPE_LINE, EXTENT=[0,0,0,500,500,0], PATH="C://gsoc//test_001_random.shp")
+    layer = gvsig.currentLayer()
     #Advanced field
+    removeField(layer, "ID")
     removeField(layer, "Distance")
-    addField(layer, "Distance")
-    modifyFeatures(layer, "Distance", "90")
-    modifyField(layer, "Distance", "LONG")
-    addFeature(layer, "Ruta01", 0, [[50,0],[100,0]])
+    addField(layer, "ID") #Add fields
+    addField(layer, "Distance", "STRING")
+    addField(layer, "Long", "LONG")
+    removeField(layer, "Long") #Remove field
+    modifyFeatures(layer, "Id", "90") #Modify all features 
+    modifyField(layer, "Id", "LONG") #Modify type of field
+    addFeature(layer, "Ruta01", 0, [[50,0],[100,0]]) #Add new feature with geometry line
     for feature in layer.features():
         perimeter = feature.geometry().perimeter()
-        modifyFeature(layer, feature, "Distance", perimeter)
+        modifyFeature(layer, feature, "Distance", perimeter) #Modify each feature
+    
     pass
 
 def copyLayerFeatures2Layer(layer1, layer2):
@@ -181,7 +189,7 @@ def addField(layer,field, sType = "STRING",iSize=20):
     #IN: layer, field, *sType, *iSize)
     #OUT: layer
     #addField(layer, "nombre")
-    schema = layer.getSchema()
+    schema = gvsig.createSchema(layer.getSchema())
     schema.modify()
     if isinstance(field,str): schema.append(field,sType,iSize)
     layer.edit()
