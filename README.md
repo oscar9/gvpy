@@ -96,4 +96,4 @@ And my weekly reports: http://masquesig.com/category/gsoc-2/
   [1]: http://oscar9.github.io/gvpy/
   [2]: http://masquesig.com/category/gsoc-2/
   [3]: http://www.gvsig.org/plone/home/projects/gvsig-desktop/official/gvsig-2.1/descargas
-  [4]: https://github.com/oscar9/gvpy/blob/master/data/images/modelosextante-scripting.png
+  [4]: https://raw.githubusercontent.com/oscar9/gvpy/master/data/images/modelosextante-scripting.png
