@@ -4,7 +4,9 @@ import gvsig
 import gvsig_raster
 
 def main(*args):
-
+    #OPEN ONE NEW VIEW
+    #With that empty View open in your project, you can execute this script.
+    
     #Generate random raster inside the analysis extent
     #can set cellsizeo of the raster result
     #if you want choose where to save the shape, you should add one attribute like this:
