@@ -90,7 +90,7 @@ Recomiendo escribirlo con el formato anterior pero también, siempre que guardem
 Ejemplo: `gvpy.runalg("randomvector", 10, 0)`
 
 Y para ser compatible con unas funcionalidades extra, también es posible si todos los parámetros los pasamos como texto con las comillas puestas:
-Ejemplo: `gvpy.runalg("randomvector", "10", "0")
+Ejemplo: `gvpy.runalg("randomvector", "10", "0")`
 
 ##Parámetros de entrada
 ###Tipos de capas/polígonos
@@ -105,6 +105,7 @@ Tipo punto: corresponde al valor 2, o también como gvpy.TYPE_POINT
 Estos dos ejemplos son iguales:
 `gvpy.runalg("randomvector",10, 0)`
 `gvpy.runalg("randomvector",10, gvpy.TYPE_POLYGON)`
+
 ###Parametros de tipo Capa
 Si el **algoritmo nos pide un parámetro de tipo capa** (ya sea tabla, vectorial o raster), tendremos que cargar esta capa en una variable y pasarla como parámetro. Existen diversas formas para hacer esto:
 
@@ -118,7 +119,14 @@ En la librería de gvpy he creado unas extras a las que podrás acceder como son
 `currentRaster()` carga el raster activo en la Vista
 `currentActive()` carga la primera capa activa en la Vista, sea del tipo que sea
 
-Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado de la ejecución de un algoritmo**, para poder ser usadas en otro pasadas como parámetro.
+Ejemplo de uso:
+```
+capa1 = currentView().getLayer("Countries") # or currentLayer()
+vista1 = currentProject().getView("World") # or currentView()
+v1 = gvpy.runalg("...", INPUT=capa1,...., EXTENT=vista1,...)
+```
+
+Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado** de la ejecución de un algoritmo (variable v1 en el ejemplo anterior), para poder ser usadas en otro pasadas como parámetro.
 
 ##Archivos de salida
 Los archivos de salida (RESULT) son la capa o capas que generarán como resultado el ejecutar nuestro algoritmo. Si no se especifica se guardarán en una carpeta temporal (explicaremos más adelante el comando PATH para indicar ruta y nombre), pero además, **podemos capturar estas capas** para poder seguir utilizándolas en nuestro script recogiendo la salida del algoritmo:
@@ -166,5 +174,3 @@ Según las capas resultado que genere el algoritmo, esto lo podemos ver cuando u
 Nos permite seleccionar en que Vista queremos que se carguen los archivos de salida de nuestros algoritmos ejecutados.
 
 Podemos introducirla tanto como por su nombre `OUTVIEW="Vista1"`como por el objeto Vista `OUTVIEW=currentView()`
-
-> Written with [StackEdit](https://stackedit.io/).
