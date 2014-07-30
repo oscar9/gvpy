@@ -78,6 +78,15 @@ class Geoprocess:
           else:
               paramValue = kwparams[i]
               
+          #Tranform STR to NUMERIC or anytype of value
+          cond1 = (str(param) == "Numerical Value")
+          cond2 = (str(param) == "Selection")
+          cond3 = isinstance(paramValue, str)
+          if (cond1 or cond2) and cond3:
+              print paramValue,
+              paramValue = float(paramValue)
+              print "YES", paramValue
+
           #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
@@ -109,11 +118,11 @@ class Geoprocess:
           frame = kwparams['EXTENT']
           if isinstance(frame, str): frame = gvsig.currentView().getLayer(frame)
           #print ("|"+str(frame)+"||"+str(type(frame)))
-          if isinstance(frame, str) and frame == 'VIEW' or isinstance(frame, gvsig.View):
+          if isinstance(frame, str) or isinstance(frame, gvsig.View):
               AExtent = AnalysisExtent()
-              print "EXTENT ************ VIEW"
+              print "| EXTENT from VIEW"
               if isinstance(frame, gvsig.View): view = frame
-              else: view = gvsig.currentView()
+              else: view = gvsig.currentProject().getView(frame)
               envelope = view.getMap().getFullEnvelope()
               xlow = envelope.getLowerCorner().getX()
               ylow = envelope.getLowerCorner().getY()
@@ -145,23 +154,25 @@ class Geoprocess:
           ##print algorithm.getAnalysisExtent() 
           ##print algorithm.isAutoExtent() 
           AExtent = AnalysisExtent()
-          print "| EXTENT ************ VIEW"
+          print "| EXTENT from VIEW"
           envelope = gvsig.currentView().getMap().getFullEnvelope()
           print "| Setting AExtent: ",
           try:
               xlow = envelope.getLowerCorner().getX()
               ylow = envelope.getLowerCorner().getY()
+              zlow = 0
               xup = envelope.getUpperCorner().getX()
               yup = envelope.getUpperCorner().getY()
-              print "View: ",
+              zup = 0
+              print "| View: ",
               print xlow, ylow, xup,yup
           except:
-              xlow, ylow, xup, yup = 0,0,100,100
-              print "Default:", xlow, ylow, xup, yup
+              xlow, ylow, zlow, xup, yup, zup = 0,0,0,100,100,0
+              print "| Default:", xlow, ylow, xup, yup
           frame = Rectangle2D.Double(xlow, ylow, xup, yup)
           AExtent.setXRange(xlow, xup, False)
           AExtent.setYRange(ylow, yup, False)
-          AExtent.setZRange(0, 0, False)
+          AExtent.setZRange(zlow, zup, False)
           algorithm.setAnalysisExtent(AExtent)
           
       #Set: cellsize
@@ -227,31 +238,33 @@ class Geoprocess:
       oo = oos.getOutput(i)
       value = oo.getOutputObject()
       if isinstance(value, FlyrVectIVectorLayer):
-        print "| Vector"
-        store = value.getFeatureStore()
-        layer = MapContextLocator.getMapContextManager().createLayer(value.getName(),store)
-        ret[value.getName()] = layer
+          print "| Vector"
+          store = value.getFeatureStore()
+          layer = MapContextLocator.getMapContextManager().createLayer(value.getName(),store)
+          store.dispose()
+          ret[value.getName()] = layer
+          layer.dispose()
       elif isinstance(value, IRasterLayer):
-        print "| Raster layer"
-        dalManager = gvsig.DALLocator.getDataManager()
-        mapContextManager = gvsig.MapContextLocator.getMapContextManager()
-        params = dalManager.createStoreParameters("Gdal Store")
-        params.setFile(File(value.getFilename()))
-        dataStore = dalManager.createStore(params)
-        layer = mapContextManager.createLayer(value.getName(), dataStore)
-        ret[value.getName()] = layer
+          print "| Raster layer"
+          dalManager = gvsig.DALLocator.getDataManager()
+          mapContextManager = gvsig.MapContextLocator.getMapContextManager()
+          params = dalManager.createStoreParameters("Gdal Store")
+          params.setFile(File(value.getFilename()))
+          dataStore = dalManager.createStore(params)
+          layer = mapContextManager.createLayer(value.getName(), dataStore)
+          ret[value.getName()] = layer
       else:
-        try:
-            ret[value.getName()] = value
-        except:
-            if not value == None: 
-                x = 0
-                while True:
-                    field = "value_" + str(x)
-                    if any(field in s for s in ret.keys()):
-                        x += 1
-                    ret[str(x)] = value
-                    break
+          try:
+              ret[value.getName()] = value
+          except:
+              if not value == None: 
+                  x = 0
+                  while True:
+                      field = "value_" + str(x)
+                      if any(field in s for s in ret.keys()):
+                          x += 1
+                      ret[str(x)] = value
+                      break
     return ret
 
   def __returnOutputObjects(self, r, kwparams):
@@ -265,10 +278,13 @@ class Geoprocess:
             print "|\t Value:", value.getName()
             path = value.getDataStore().getFullName()
             print "|\t\tPath: ", path
+           
             if "OUTVIEW" in kwparams:
-                value = loadShapeFileNew(str(path), view=kwparams["OUTVIEW"])
+                viewName = (kwparams["OUTVIEW"]).decode("UTF-8")
+                value = loadShapeFileNew(str(path), view=viewName)
             else: 
                 value = loadShapeFileNew(str(path))
+            
             
             outList.append(value)
         #elif isinstance(value, IRasterLayer):
@@ -293,7 +309,7 @@ class Geoprocess:
 
     
   def execute(self, algorithmId, kwparams):
-    
+    print "| Algoritmo: ", algorithmId
     algorithm = self.getAlgorithms()[algorithmId]
     #print algorithm.getAlgorithmAsCommandLineSentences()
 
@@ -337,13 +353,16 @@ def runalg(algorithmId,*params, **kwparams):
   r = geoprocess.execute(algorithmId, kwparams )
   return r
 
-def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=gvsig.currentView()):
+def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=None):
     try:
         CRS = gvsig.currentProject().getProjectionCode()
     except:
         pass
     layer = gvsig.loadLayer('Shape', shpFile=shpFile, CRS=CRS)
-    if isinstance(view,str): view = gvsig.currentProject().getView(view)
+    if isinstance(view,str): 
+        view = gvsig.currentProject().getView(view)
+    else:
+        view = gvsig.currentView()
     view.addLayer(layer)
     layer.setActive(active)
     return gvsig.Layer(layer)
@@ -461,9 +480,9 @@ def main(*args):
     #runalg("difference", "vista2_testeo.shp", layer, PATH="C:/gvsig/recorte_extent_2.shp", EXTENT=layer, OUTVIEW="Nueva")
     #r = runalg("tablebasicstats", "species", 0)
     #print r.encode("UTF-8")
+    
+    #algHelp("generaterandomnormal")
     """
-    print gvsig.currentLayer()
-    algHelp("generaterandomnormal")
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
     r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
     r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
@@ -473,10 +492,27 @@ def main(*args):
     v2 = runalg("randomvector", 5, TYPE_POLYGON, EXTENT=v1)
     v3 = runalg("difference", v1, v2, PATH="C:/gvsig/Diferencia.shp")
     v4 = runalg("randomvector", 5, 0, PATH="C:/gvsig/randomvector.shp", EXTENT=v3)
-    v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector")
+    v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector", OUTVIEW="Nueva")
     #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
     algHelp("tablebasicstats")
-    v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig012.shp")
-    """
+    #v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig013.shp")
     v5 = runalg("randomvector", 100, 2, EXTENT=[0,0,0,500,500,0])
-    print "End"
+    
+    #Test for model sextante
+    v5 = runalg("randomvector", 10, 2, EXTENT=[0,0,0,500,500,0], OUTVIEW="Nueva")
+    v5 = runalg("randomvector", "5", 2, EXTENT=[0,0,0,500,500,0], OUTVIEW="Nueva")
+    
+    r = runalg("generaterandomnormal", 100,100, CELLSIZE=1)
+    
+    vista= (gvsig.currentView().name).encode('UTF-8')
+    print vista
+    vista= "Sin título - 1"
+    print vista.decode("UTF-8")
+    #vista = vista.encode("UTF-8")
+    print gvsig.currentProject().getView(vista)
+    
+    v = runalg("randomvector", 20, 0, OUTVIEW="Sin título - 1")
+    #print "**Addfield: ", gvpy.addField(v, "ID5")
+    #print gvpy.addField(v, "ID89")
+    """
+    print "end"

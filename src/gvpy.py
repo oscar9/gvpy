@@ -246,7 +246,9 @@ class Geoprocess:
         print "| Vector"
         store = value.getFeatureStore()
         layer = MapContextLocator.getMapContextManager().createLayer(value.getName(),store)
+        store.dispose()
         ret[value.getName()] = layer
+        layer.dispose()
       elif isinstance(value, IRasterLayer):
         print "| Raster layer"
         dalManager = gvsig.DALLocator.getDataManager()
@@ -282,7 +284,8 @@ class Geoprocess:
             path = value.getDataStore().getFullName()
             print "|\t\tPath: ", path
             if "OUTVIEW" in kwparams:
-                value = loadShapeFileNew(str(path), view=kwparams["OUTVIEW"])
+                viewName = (kwparams["OUTVIEW"]).decode("UTF-8")
+                value = loadShapeFileNew(str(path), view=viewName)
             else: 
                 value = loadShapeFileNew(str(path))
             
