@@ -362,7 +362,10 @@ def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=gvsig.currentVie
     except:
         pass
     layer = gvsig.loadLayer('Shape', shpFile=shpFile, CRS=CRS)
-    if isinstance(view,str): view = gvsig.currentProject().getView(view)
+    if isinstance(view,str): 
+        view = gvsig.currentProject().getView(view)
+    else:
+        view= gvsig.currentView()
     view.addLayer(layer)
     layer.setActive(active)
     return gvsig.Layer(layer)
