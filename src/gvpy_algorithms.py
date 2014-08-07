@@ -2,6 +2,7 @@ import gvsig
 import geom
 import gvsig_raster
 
+import os.path
 from org.gvsig.andami import PluginsLocator
 from org.gvsig.fmap.mapcontext import MapContextLocator
 import java.awt
@@ -71,17 +72,18 @@ class Geoprocess:
   def __defineParameters(self, algorithm, kwparams):
       """ Define input parameters """
       params = algorithm.getParameters()
-      for i in range(0,params.getNumberOfParameters()):
+      for i in xrange(0,params.getNumberOfParameters()):
           param = params.getParameter(i)
           if param.getParameterName() in kwparams:
               paramValue = kwparams[param.getParameterName()]
           else:
               paramValue = kwparams[i]
               
-          #Tranform STR to NUMERIC or anytype of value
+          #Input params: Tranform STRING to NUMERIC
           cond1 = (str(param) == "Numerical Value")
           cond2 = (str(param) == "Selection")
           cond3 = isinstance(paramValue, str)
+          #print str(param), type(paramValue)
           if (cond1 or cond2) and cond3:
               print paramValue,
               paramValue = float(paramValue)
@@ -147,12 +149,10 @@ class Geoprocess:
               layer = self.__createSextanteLayer(frame())
               AExtent = AnalysisExtent(layer)
           else:
-              raise NameError("Not Extent Define")
+              raise Exception("Not Extent Define")
       else:
           print ("| Not Extent: No input data")
           if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
-          ##print algorithm.getAnalysisExtent() 
-          ##print algorithm.isAutoExtent() 
           AExtent = AnalysisExtent()
           print "| EXTENT from VIEW"
           envelope = gvsig.currentView().getMap().getFullEnvelope()
@@ -181,6 +181,7 @@ class Geoprocess:
           print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
       else:
           print "| Cellsize: ", AExtent.getCellSize()
+          
       if 'CELLSIZEZ' in kwparams.keys():
           AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
           print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
@@ -192,6 +193,7 @@ class Geoprocess:
   def __defineOutput(self, algorithm, kwparams):
     if 'PATH' in kwparams.keys():
         path = kwparams['PATH']
+        checkFilesExist(path)
         outputSet = algorithm.getOutputObjects()
         if outputSet.getOutputDataObjectsCount() == 1:
             out1 = outputSet.getOutput(0)
@@ -200,15 +202,14 @@ class Geoprocess:
             out1channel.setFilename(path)
             print "| PATH: Good path"
         elif outputSet.getOutputDataObjectsCount() > 1 and isinstance(path, list):
-            for n in range(0, outputSet.getOutputDataObjectsCount()):
+            for n in xrange(0, outputSet.getOutputDataObjectsCount()):
                 out1 = outputSet.getOutput(n)
                 out1.setOutputChannel(FileOutputChannel("New_name"))
                 out1channel = out1.getOutputChannel()
                 out1channel.setFilename(path[n])
                 print "| PATH: Good path"
         else:
-            print "| PATH: Bad path"
-            raise
+            raise Exception("Bad path")
             
     elif algorithm.getOutputObjects().getOutput(0).getOutputChannel(): 
         output0 = algorithm.getOutputObjects().getOutput(0)
@@ -221,20 +222,20 @@ class Geoprocess:
     #Check algorithm
     correctValues = algorithm.hasCorrectParameterValues()
     print "| Parameter values:", correctValues
-    if not correctValues: raise NameError("Not correct values")
+    if not correctValues: raise Exception("Not correct values")
     try:
-        print "| Algoritmo:", list(algorithm.algorithmAsCommandLineSentences)
+        print "| Pre-algorithm:", list(algorithm.algorithmAsCommandLineSentences)
     except:
         print "| Not - algorithm"
-        
-    algorithm.execute( None, self.__outputFactory)
-    print "| Algoritmo:", list(algorithm.algorithmAsCommandLineSentences)
     
+    algorithm.execute( None, self.__outputFactory)
+    print "| Algorithm:", list(algorithm.algorithmAsCommandLineSentences)
+
   def __getOutputObjects(self, algorithm):
     """Take outputObjets of the algorithm"""
     oos = algorithm.getOutputObjects()
     ret = dict()
-    for i in range(0,oos.getOutputObjectsCount()):
+    for i in xrange(0,oos.getOutputObjectsCount()):
       oo = oos.getOutput(i)
       value = oo.getOutputObject()
       if isinstance(value, FlyrVectIVectorLayer):
@@ -278,7 +279,6 @@ class Geoprocess:
             print "|\t Value:", value.getName()
             path = value.getDataStore().getFullName()
             print "|\t\tPath: ", path
-           
             if "OUTVIEW" in kwparams:
                 viewName = (kwparams["OUTVIEW"]).decode("UTF-8")
                 value = loadShapeFileNew(str(path), view=viewName)
@@ -287,7 +287,6 @@ class Geoprocess:
             
             
             outList.append(value)
-        #elif isinstance(value, IRasterLayer):
         elif isinstance(value,FLayer):
             print "|\t Value:", value.getName()
             print "|\t\t", value.getFileName()[0]
@@ -295,17 +294,14 @@ class Geoprocess:
             value = gvsig_raster.loadRasterLayer(value.getFileName()[0])
             outList.append(value)
         else:
-            print "Non-type"
+            print "|\t Non-type"
             print "\tValue: ", value
       print "\n"
       
       #Return object or list
-      if len(r.values()) > 1:
-          return outList
-      elif len(r.values()) == 1:
-          return value
-      else:
-          return None
+      if len(r.values()) > 1: return outList
+      elif len(r.values()) == 1: return value
+      else: return None
 
     
   def execute(self, algorithmId, kwparams):
@@ -337,7 +333,6 @@ class Geoprocess:
     
     #Output objects
     ret = self.__getOutputObjects(algorithm)
-
     r = self.__returnOutputObjects(ret, kwparams)
     
     return r
@@ -348,21 +343,23 @@ def unionParameters(params, kwparams):
     return kwparams
 
 def runalg(algorithmId,*params, **kwparams):
-  kwparams = unionParameters(params, kwparams)
-  geoprocess = Geoprocess()
-  r = geoprocess.execute(algorithmId, kwparams )
-  return r
+    kwparams = unionParameters(params, kwparams)
+    geoprocess = Geoprocess()
+    r = geoprocess.execute(algorithmId, kwparams )
+    del(geoprocess)
+    return r
+    
 
-def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=None):
+def loadShapeFileNew(shpFile, CRS='CRS:84', active=False, view=gvsig.currentView()):
     try:
-        CRS = gvsig.currentProject().getProjectionCode()
+        CRS = gvsig.currentView().getProjectionCode()
     except:
         pass
     layer = gvsig.loadLayer('Shape', shpFile=shpFile, CRS=CRS)
     if isinstance(view,str): 
         view = gvsig.currentProject().getView(view)
     else:
-        view = gvsig.currentView()
+        view= gvsig.currentView()
     view.addLayer(layer)
     layer.setActive(active)
     return gvsig.Layer(layer)
@@ -370,10 +367,10 @@ def loadShapeFileNew(shpFile, CRS='CRS:84', active= False, view=None):
 def algHelp(geoalgorithmId):
     geoprocess = Geoprocess() 
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
-      if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
-      else: continue
-      print "* Algorithm help: ", algorithm.getName().encode('UTF-8')
-      print "*", algorithm.commandLineHelp.encode('UTF-8')
+        if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
+        else: continue
+        print "* Algorithm help: ", algorithm.getName().encode('UTF-8')
+        print "*", algorithm.commandLineHelp.encode('UTF-8')
     del(geoprocess)
    
 def algSearch(strSearch):
@@ -416,7 +413,19 @@ def getProjectTable(table):
     """Get table"""
     return gvsig.currentProject().getTable(table)
     
+def checkFilesExist(files):
+    """Path or Paths of files"""
+    #raise a exception
+    
+    if isinstance(files, str):
+        if os.path.isfile(files): raise Exception("File already exist" + files)
+    elif isinstance(files, list):
+        for fname in files:
+            if os.path.isfile(fname): raise Exception("File already exist" + fname)
+        
 def main(*args):
+    #checkFilesExist(["C:/gvsig/ran10.shp"])
+    
     #geoprocessSearch(" ")
     #geoprocessHelp("closegapsnn")
     #geoprocessHelp("perturbatepointslayer")
@@ -482,7 +491,7 @@ def main(*args):
     #print r.encode("UTF-8")
     
     #algHelp("generaterandomnormal")
-    """
+    
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
     r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
     r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
@@ -493,9 +502,9 @@ def main(*args):
     v3 = runalg("difference", v1, v2, PATH="C:/gvsig/Diferencia.shp")
     v4 = runalg("randomvector", 5, 0, PATH="C:/gvsig/randomvector.shp", EXTENT=v3)
     v5 = runalg("randomvector", 100, 2, PATH="C:/gvsig/randompoints.shp", EXTENT="randomvector", OUTVIEW="Nueva")
-    #not working v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran10.shp","C:/gvsig/ran20.shp","C:/gvsig/ran30.shp"])
+    v6 = runalg("gvSIG-xyshift", "randompoints", "false", "-250.0", "-250.0", PATH=["C:/gvsig/ran1010.shp","C:/gvsig/ran2020.shp","C:/gvsig/ran3030.shp"])
     algHelp("tablebasicstats")
-    #v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig013.shp")
+    v7 = runalg("gvSIG-buffer", "randompoints", False, 50.0, 0, False, True, 0, 0, PATH="C:/gvsig/buffer_gvsig0138.shp")
     v5 = runalg("randomvector", 100, 2, EXTENT=[0,0,0,500,500,0])
     
     #Test for model sextante
@@ -505,14 +514,21 @@ def main(*args):
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=1)
     
     vista= (gvsig.currentView().name).encode('UTF-8')
-    print vista
-    vista= "Sin título - 1"
-    print vista.decode("UTF-8")
+    """
+
+
+    """
+    vista= "Sin título"
     #vista = vista.encode("UTF-8")
+    
     print gvsig.currentProject().getView(vista)
     
-    v = runalg("randomvector", 20, 0, OUTVIEW="Sin título - 1")
+    
+    v = runalg("randomvector", 20, 0)
+    
     #print "**Addfield: ", gvpy.addField(v, "ID5")
-    #print gvpy.addField(v, "ID89")
-    """
+    #import gvpy
+    #gvpy.addField(v, "ID89")
+    #runalg("vectoraddfield", v, "Campo1", 0, 1, 0, 1, PATH="C:\\Users\\Oscar\\Desktop\\testi.shp")
+    #layer = runalg("randomvector", 20, TYPE_LINE, EXTENT=[0,0,0,500,500,0], OUTVIEW="Po1")
     print "end"

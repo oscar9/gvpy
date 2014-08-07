@@ -66,9 +66,12 @@ def main(*args):
     modifyFeatures(v, "Direccion", "Av")
     removeField(v, "Direccion")
     """
+    
+    """
+    #EJEMPLO 1
     #New shapes
-    #layer = gvpy.runalg("randomvector", 20, gvpy.TYPE_LINE, EXTENT=[0,0,0,500,500,0], PATH="C://gsoc//test_001_random.shp")
-    layer = gvsig.currentLayer()
+    layer = gvpy.runalg("randomvector", 20, gvpy.TYPE_LINE, EXTENT=[0,0,0,500,500,0], OUTVIEW="Po1")
+    #layer = gvsig.currentLayer()
     #Advanced field
     removeField(layer, "ID")
     removeField(layer, "Distance")
@@ -76,15 +79,27 @@ def main(*args):
     addField(layer, "Distance", "STRING")
     addField(layer, "Long", "LONG")
     removeField(layer, "Long") #Remove field
-    modifyFeatures(layer, "Id", "90") #Modify all features 
-    modifyField(layer, "Id", "LONG") #Modify type of field
-    addFeature(layer, "Ruta01", 0, [[50,0],[100,0]]) #Add new feature with geometry line
+    modifyFeatures(layer, "ID", "90") #Modify all features 
+    modifyField(layer, "ID", "LONG") #Modify type of field
+    modifyField(layer, "Distance", "FLOAT")
+    addFeature(layer, 1, 0, [[50,0],[1000,0]]) #Add new feature with geometry line
     for feature in layer.features():
         perimeter = feature.geometry().perimeter()
         modifyFeature(layer, feature, "Distance", perimeter) #Modify each feature
     
     pass
-
+    #FIN EJEMPLO 1
+    """
+    
+    #modifyFeatures(gvsig.currentLayer(), "ID", 100, "Distance == 90")
+    layer = gvsig.currentLayer()
+    for feature in gvsig.currentLayer().features():
+        value = feature.Distance
+        #modifyFeature(layer, feature, "ID", distance)
+        feature.edit()
+        feature.set("ID", value)
+        layer.update(feature)
+            
 def copyLayerFeatures2Layer(layer1, layer2):
     for i in layer1.features():
         layer2.append(i.getValues())
@@ -142,6 +157,8 @@ def addFeature(layer, *params, **kwparams):
                 elif typeLayer == "MultiSurface2D":
                     if isinstance(value, list):
                         values[sch] = list2geompoly(value)
+                else: #Si son geometrias
+                    values[sch] = value
             else:
                 values[sch] = value
             try:
@@ -170,9 +187,13 @@ def list2geomcurve(listPoints):
         geometry.addVertex(geom.createPoint(point[0],point[1]))
     return geometry
     
-def modifyFeatures(layer, field, value, COMMIT=1):
+def modifyFeatures(layer, field, value, COMMIT=1,FILTER=None):
     #IN: layer, field, new value
-    features = layer.features()
+    if FILTER == None:
+        features = layer.features()
+    else:
+        features = layer.features(FILTER)
+        
     for feature in features:
         feature.edit()
         feature.set(field, value)
