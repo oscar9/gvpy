@@ -660,15 +660,16 @@ def addField(layer,field, sType = "STRING",iSize=20):
     print "Add field ", field, " to ", layer.name
     return layer
     
-def modifyField(layer, field, iType="STRING", iSize=20):
+def modifyField(layer, field, iType="STRING", iSize=20, newField=None):
     temp = []
+    if newField==None: newField = field
     for i in layer.features():
         temp.append(i.get(field))
     removeField(layer, field)
-    addField(layer, field, iType, iSize)
+    addField(layer, newField, iType, iSize)
     n = 0
     for i in layer.features():
-        modifyFeature(layer, i, field, temp[n],COMMIT=0)
+        modifyFeature(layer, i, newField, temp[n],COMMIT=0)
         n += 1
     layer.commit()
     print "Modify field type to: ", field, " in ", layer.name
