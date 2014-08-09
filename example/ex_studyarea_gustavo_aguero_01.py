@@ -3,6 +3,8 @@ import gvsig
 import commonsdialog
 def main(*args):
     """Study area"""
+    #You will need to open 2 layers that have the intersection
+    #all inside one view with the name "Vista1"
     
     #End-Name of the new layers
     #Increment +1 if you execute again this script
