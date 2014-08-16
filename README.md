@@ -3,11 +3,17 @@
 **Working for gvSIG and OSGeo Foundation**
 
 ----------
+###gvpy: USER GUIDE in English
+https://github.com/oscar9/gvpy/blob/master/gvpy_user_guide.md
 
-##GVPY: GUIA DE USO en Español
+All the options needed for launch geoprocess from the Scripting Framework
+
+###gvpy: GUÍA DE USO en Español
 https://github.com/oscar9/gvpy/blob/master/gvpy_guia_de_uso.md
 
 Todas las opciones disponibles para lanzar geoprocesos desde el Módulo de Scripting
+
+> See one good example using gvpy! Go to the the folder `/example/` inside this repository
 
 ----------
 
@@ -82,6 +88,8 @@ For now, this library will be to develop easy access to the scripting functions.
 ```
 
 ### III. xml_model2script.py
+
+> UPDATE: Now is inside gvpy! Just execute `gvpy.model2script(pathModel, pathNewScript)`
 
 Script for gvSIG 2 that allows export from SEXTANTE.model to Python Script with one click.
 

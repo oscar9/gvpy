@@ -19,9 +19,9 @@ import java.awt.geom
 from java.io import File
 
 def addDependencyWithPlugin(pluginCode):
-  pluginsManager = PluginsLocator.getManager()
-  scriptingPlugin = pluginsManager.getPlugin("org.gvsig.scripting.app.extension")
-  scriptingPlugin.addDependencyWithPlugin(pluginsManager.getPlugin(pluginCode))
+    pluginsManager = PluginsLocator.getManager()
+    scriptingPlugin = pluginsManager.getPlugin("org.gvsig.scripting.app.extension")
+    scriptingPlugin.addDependencyWithPlugin(pluginsManager.getPlugin(pluginCode))
 
 addDependencyWithPlugin("org.gvsig.geoprocess.app.mainplugin")
 
@@ -90,13 +90,20 @@ class Geoprocess:
           #Input params: Tranform STRING to NUMERIC
           cond1 = (str(param) == "Numerical Value")
           cond2 = (str(param) == "Selection")
-          cond3 = isinstance(paramValue, str)
-          #print str(param), type(paramValue)
-          if (cond1 or cond2) and cond3:
-              print paramValue,
-              paramValue = float(paramValue)
-              print "YES", paramValue
-
+          isstr = isinstance(paramValue, str)
+          cond4 = (str(param) == "Boolean")
+          cond5 = (str(param) == "Table Field")
+          
+          print str(param), type(paramValue)
+          if isstr:
+              if (cond1 or cond2):
+                  paramValue = float(paramValue)
+              elif cond4:
+                  paramValue = eval(paramValue.capitalize())
+              elif cond5:
+                  paramValue = int(paramValue)
+              else: #is str
+                  pass
           #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
@@ -163,7 +170,10 @@ class Geoprocess:
           if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
           AExtent = AnalysisExtent()
           print "| EXTENT from VIEW"
-          envelope = gvsig.currentView().getMap().getFullEnvelope()
+          try:
+              envelope = gvsig.currentView().getMap().getFullEnvelope()
+          except:
+              raise Exception("None open View")
           print "| Setting AExtent: ",
           try:
               xlow = envelope.getLowerCorner().getX()
@@ -207,7 +217,12 @@ class Geoprocess:
             out1 = outputSet.getOutput(0)
             out1.setOutputChannel(FileOutputChannel("New_name"))
             out1channel = out1.getOutputChannel()
-            out1channel.setFilename(path)
+            if isinstance(path, str):
+                out1channel.setFilename(path)
+            elif isinstance(path, list):
+                out1channel.setFilename(path[0])
+            else:
+                raise Exception("No valid path")
             print "| PATH: Good path"
         elif outputSet.getOutputDataObjectsCount() > 1 and isinstance(path, list):
             for n in xrange(0, outputSet.getOutputDataObjectsCount()):
@@ -353,7 +368,7 @@ def unionParameters(params, kwparams):
 def runalg(algorithmId,*params, **kwparams):
     kwparams = unionParameters(params, kwparams)
     geoprocess = Geoprocess()
-    r = geoprocess.execute(algorithmId, kwparams )
+    r = geoprocess.execute(algorithmId, kwparams)
     del(geoprocess)
     return r
     
@@ -384,12 +399,22 @@ def algHelp(geoalgorithmId):
 def algSearch(strSearch):
     print "Inicio de busqueda.."
     geoprocess = Geoprocess()
-    search = strSearch.encode('UTF-8')
+    search = strSearch.lower().encode('ASCII','ignore')
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
-        name = (algorithm.getName()).encode('UTF-8')
-        group = (algorithm.getGroup()).encode('UTF-8')
-        if (name.find(search) > 0) or (group.find(search)>0):
-             print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
+        name = (algorithm.getName()).lower().encode('ASCII','ignore')
+        group = (algorithm.getGroup()).lower().encode('ASCII','ignore')
+        #print type(name), type(group)
+        #print name, group
+        con1 = str(name).find(search) >= 0
+        con2 = str(group).find(search) >= 0
+        con3 = algorithmId.encode('ASCII').find(search) >= 0
+        #print con3, type(con3)
+        #print con1, con2, con3
+        if con1 or con2 or con3:
+            if con1 or con2:
+                print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
+            else:
+                print "*", algorithm.commandLineHelp.encode('UTF-8')
     print "..Busqueda finalizada"
     del(geoprocess)
     
@@ -411,9 +436,14 @@ def currentActive():
     
 def getProjectLayer(view,layer):
     """Get vector layer or raster"""
+    
     try:
-        return gvsig.currentProject().getView(view).getLayer(layer)
-    except:
+        if isinstance(view, str): view = gvsig.currentProject().getView(view)
+        if isinstance(layer, str):
+            return view.getLayer(layer)
+        else:
+            return layer
+    except: #Bug: Raster problem with getLayer
         for i in gvsig.currentProject().getView(view).getLayers():
             if i.name == layer: return i
             
@@ -499,7 +529,7 @@ def main(*args):
     #print r.encode("UTF-8")
     
     #algHelp("generaterandomnormal")
-    
+    """
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
     r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
     r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
@@ -526,20 +556,127 @@ def main(*args):
 
 
     """
-    vista= "Sin titulo"
+    vista= "Sin título"
     #vista = vista.encode("UTF-8")
     
     print gvsig.currentProject().getView(vista)
     
     
+    endid = "_104.shp"
     v = runalg("randomvector", 20, 0)
+    v2 = runalg("randomvector", 20, 0,PATH=["C://gvsig//i"+endid])
+    #fitpoints = runalg("fitnpointsinpolygon",v, "2", "74", 1, 0)
+    intersection = runalg("gvSIG-intersection", v, getProjectLayer(gvsig.currentView(),"i_102"), True, True,PATH=["C://gvsig//inter_pol"+endid,"C://gvsig//inter_line"+endid,"C://gvsig//inter_point"+endid])
+    """
+    algSearch("nodelines")
+    #ID:  extractendpointsoflines  || GROUP:  Topolog????a  || NAME:  Obtener extremos de l??neas
     
+    #v7 = runalg("gvSIG-buffer", v, "False", 50.0, 0, "false", "true", 0, 0)
     #print "**Addfield: ", gvpy.addField(v, "ID5")
     #import gvpy
     #gvpy.addField(v, "ID89")
     #runalg("vectoraddfield", v, "Campo1", 0, 1, 0, 1, PATH="C:\\Users\\Oscar\\Desktop\\testi.shp")
     #layer = runalg("randomvector", 20, TYPE_LINE, EXTENT=[0,0,0,500,500,0], OUTVIEW="Po1")
     print "end"
+    
+def mainLibrary():
+    #showFields(gvsig.currentLayer())
+    #removeField(layer, "campo3")
+    #removeField(layer, "campo5")
+    #addField(layer,"campo1")
+    #addField(layer,"campo2")
+    #renameField(layer, "campo5", "campo50")
+
+    #print list2geompoly([[1,2],[3,10],[5,30]])
+    #addFeature(layer, "test01", "test2", [15,200])
+    #addFeature(layer, "test11", "test3", geom.createPoint(300, 301))
+    #addFeature(layer, campo1 = "kwparam", campo2 = "kwparam2", GEOMETRY = geom.createPoint(300,300))
+    #addFeature(layer, "linea", "01", [[1,2],[3,10],[5,30]])
+    #addFeature(layer, "pol", "02", [[50,80],[150,50],[100,10],[0,10],[50,80]])
+
+    """
+    layer = newLayer()
+    addFeature(layer, "pol", "01", [[50,80],[150,50],[100,10],[0,10],[50,80]])
+    addFeature(layer, "pol", "02", [[0,0],[10,5],[10,10],[0,10],[5,5]])
+    addFeature(layer, "pol", "03", [[-50, -34],[0,0], [-14,30]])
+    addField(layer,"campo3")
+    modifyFeatures(layer, "campo3", "nuevo poligono")
+    """
+    """
+    #Create shapes
+    layer1 = newLayer(layer,"C:/gvsig/point_shape.shp", 1)
+    layer2 = newLayer(layer,"C:/gvsig/line_shape.shp", 2)
+    layer3 = newLayer(layer,"C:/gvsig/polygon_shape", 3)
+    
+    #Add features
+    addFeature(layer1, "point", "01", [50,80])
+    addFeature(layer1, "point", "02",[150,50])
+    addFeature(layer1, "point", "03",[100,10])
+    addFeature(layer1, "point", "04",[0,10])
+
+    addFeature(layer3, "polygon", "01", [[50,80],[150,50],[100,10],[0,10],[50,80]])
+
+    addFeature(layer2, "line", "01", [[50,80],[150,50],[100,10],[0,10],[50,80]])
+    
+    #Modify all values in one column
+    modifyFeatures(layer1, "campo1", "Points_gsoc")
+    modifyFeatures(layer2, "campo1", "Lines_gsoc")
+
+    #Modify schema
+    addField(layer1,"Name")
+    removeField(layer1,"Surname")
+    
+    ##Execute SEXTANTE
+    #r = geoprocess("perturbatepointslayer", LAYER = currentLayer(),MEAN = 5, STDDEV = 5 )
+    """
+    #layer = gvsig.currentView().getLayer("line_04.shp")
+    #newLayer(layer, "C:/gvsig/gvpy_test006.shp")
+    #layer2 = copyLayer(layer, "C:/gvsig/gvpy_copylayer_012.shp")
+    #v = copyLayer(layer, "C:/gvpy_copylayer_new_06.shp")
+    #layer = gvsig.currentView().getLayer("gvpy_copylayer_new_06")
+    #addFeature(v, "Camino", [[50,00],[50,50],[10,10],[0,1],[50,18]])
+
+    #Basics field
+    """
+    addField(v, "Direccion")
+    modifyFeatures(v, "Direccion", "Av")
+    removeField(v, "Direccion")
+    """
+    
+    """
+    #EJEMPLO 1
+    #New shapes
+    layer = gvpy.runalg("randomvector", 20, gvpy.TYPE_LINE, EXTENT=[0,0,0,500,500,0], OUTVIEW="Po1")
+    #layer = gvsig.currentLayer()
+    #Advanced field
+    removeField(layer, "ID")
+    removeField(layer, "Distance")
+    addField(layer, "ID") #Add fields
+    addField(layer, "Distance", "STRING")
+    addField(layer, "Long", "LONG")
+    removeField(layer, "Long") #Remove field
+    modifyFeatures(layer, "ID", "90") #Modify all features 
+    modifyField(layer, "ID", "LONG") #Modify type of field
+    modifyField(layer, "Distance", "FLOAT")
+    addFeature(layer, 1, 0, [[50,0],[1000,0]]) #Add new feature with geometry line
+    for feature in layer.features():
+        perimeter = feature.geometry().perimeter()
+        modifyFeature(layer, feature, "Distance", perimeter) #Modify each feature
+    
+    pass
+    #FIN EJEMPLO 1
+    """
+    
+    #modifyFeatures(gvsig.currentLayer(), "ID", 100, "Distance == 90")
+    layer = gvsig.currentLayer()
+    for feature in gvsig.currentLayer().features():
+        value = feature.Distance
+        #modifyFeature(layer, feature, "ID", distance)
+        feature.edit()
+        feature.set("ID", value)
+        layer.update(feature)
+    #model2script("C://gsoc//test02.model", "C://gsoc//nuevoScript.py")
+    print "END TEST"
             
 def copyLayerFeatures2Layer(layer1, layer2):
     for i in layer1.features():
@@ -582,7 +719,7 @@ def addFeature(layer, *params, **kwparams):
         value = itera.next()
         for sch in schValues: 
             #Si el campo a modificar es una geometria
-            #print "Comprobacion:", sch, isinstance(value, list)
+            #print "Comprobación:", sch, isinstance(value, list)
             #re comprobacion si es campo geometry
             #bug: Comprobar si es lista o objeto geom  en primer if
             #... sch == "Geometry" and ES UNA LISTA
@@ -660,16 +797,15 @@ def addField(layer,field, sType = "STRING",iSize=20):
     print "Add field ", field, " to ", layer.name
     return layer
     
-def modifyField(layer, field, iType="STRING", iSize=20, newField=None):
+def modifyField(layer, field, iType="STRING", iSize=20):
     temp = []
-    if newField==None: newField = field
     for i in layer.features():
         temp.append(i.get(field))
     removeField(layer, field)
-    addField(layer, newField, iType, iSize)
+    addField(layer, field, iType, iSize)
     n = 0
     for i in layer.features():
-        modifyFeature(layer, i, newField, temp[n],COMMIT=0)
+        modifyFeature(layer, i, field, temp[n],COMMIT=0)
         n += 1
     layer.commit()
     print "Modify field type to: ", field, " in ", layer.name
@@ -694,3 +830,104 @@ def removeField(layer, field):
     layer.updateSchema(schema)
     layer.commit()
     return layer
+
+    
+def model2script(pathXML, pathFile):
+    #eliminar la ultima linea
+    #pathXML = commonsdialog.openFileDialog("Selecciona archivo", 'C:/gsoc/')
+    #pathXML = str(pathXML[0])
+    #pathXML = 'C:/gsoc/test02.model'
+    #pathFILE = 'C:/gsoc/script0002.py'
+
+    fileFile = open(pathXML, 'r')
+    document = fileFile.read()
+    root = xml.dom.minidom.parseString(document)
+    #root
+    inputObject = {}
+    inputObjectParams = {}
+    dataObject = {}
+    algorithms = {}
+    tab = "    "
+    gvpyFile = open(pathFile, "w")
+    #Cargamos los parametros
+    print "\nData object"
+    for child in root.getElementsByTagName("data_object"):
+        #data_object - Parametros
+        if "INNER" in child.getAttribute("key"):
+            inputObjectParams[child.getAttribute("key")] = child.getAttribute("value")
+        #data_object - result of algorithms
+        else:
+            inputObject[child.getAttribute("key")]=[child.getAttribute("value"), child.getAttribute("description").encode("UTF-8")]
+    
+    print "\n Attribute"
+    for child in root.getElementsByTagName("input"):
+        for i in child.getElementsByTagName("attribute"):
+                if i.getAttribute("name")=="default": dataObject[child.getAttribute("name")] = i.getAttribute("value")
+    
+    print "\n Algorithm"
+    order = 1
+    for child in reversed(root.getElementsByTagName("algorithm")):
+        print "Algoritmo: ", child
+        keyAlgorithm = child.getAttribute("key")
+        algorithmParams = {}
+        algorithmParams["alg_cmd_line_name"]=child.getAttribute("alg_cmd_line_name")
+        for i in child.getElementsByTagName("assignment"):
+            algorithmParams[i.getAttribute("key")] = i.getAttribute("assigned_to")
+        algorithmParams["result_of_algorithm"] = keyAlgorithm
+        algorithms[order] = algorithmParams
+        order +=1
+    
+    print "\n\n******* RESULTADO *******"
+    print "inputObject: ", inputObject
+    print "inputObjectParams: ", inputObjectParams
+    print "algorithms: ", algorithms
+    print "data object: ", dataObject
+    
+    #Writing script .py
+    print "\nTransform to gvpy"
+    for i in root.getElementsByTagName("model"):
+        modelName = i.getAttribute("name")
+    gvpyFile.write("# Modelo de SEXTANTE: " + modelName)
+    gvpyFile.write(
+"""
+import gvpy
+import gvsig
+import geom
+    
+def main(*args):
+""")
+                   
+    print "gvpy - data_object"
+    listInputObject = []
+    for n in reversed(inputObject.keys()):
+        listInputObject.append([n,inputObject[n][1]])
+
+    print "gvpy - inputObjectParams"
+    for n in (inputObjectParams.keys()):
+        gvpyFile.write( tab + n + ' = "' + inputObjectParams[n] + '"\n' )
+        
+    print "gvpy - vars"
+    for n in (dataObject.keys()):
+        gvpyFile.write( tab + n +' = "' + dataObject[n] + '"\n\n' )
+    
+    
+    print "gvpy - algoritms"
+    #inputObject list of result algorithms names
+    for n in reversed(sorted(algorithms.keys())): #reversed(algorithms.keys()):
+        gvpy= ""
+        alg = algorithms[n]
+        #prefijo: buscar en los data_object el nombre que debe de llevar la capa resultado
+        for i in listInputObject:
+            if alg["result_of_algorithm"] in i[0]:
+                prefix = i[0]
+                description = i[1]
+        #Escribimos el codigo del algoritmo
+        gvpyFile.write( tab + '# '+ description + '\n')
+        gvpy += prefix + '= gvpy.runalg("'+alg["alg_cmd_line_name"]+'"'
+        for i in alg:
+            if i == "alg_cmd_line_name" or i == "result_of_algorithm": continue
+            gvpy += ', '+i+'='+ alg[i] + ''
+        gvpy += ')'
+        gvpyFile.write( tab + gvpy + "\n\n" )
+    
+    gvpyFile.close()

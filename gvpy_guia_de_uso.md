@@ -11,7 +11,7 @@ Github con el código y actualizaciones del proyecto: https://github.com/oscar9/
 Explicación del proyecto: http://oscar9.github.io/gvpy/
 
 Autor: **Óscar Martínez Olmos**
-Email: **masquesig@gmail.com**
+Email: <masquesig@gmail.com>
 Blog: http://www.masquesig.com
 Twitter: https://twitter.com/masquesig
 
@@ -31,14 +31,16 @@ Ubicarlo dentro de la carpeta:
 
 Si tenías gvSIG abierto, deberás de cerrarlo y volverlo a abrir.
 
-Ahora, para poder acceder a esta librería en tus scripts lo único que debes de hacer es escribir al inicio de tu código:
+Ahora, para poder acceder a esta librería en tus scripts lo único que debes de hacer es escribir al inicio de tu código o en la Consola de Jython esto:
+
 ```
 import gvpy
 ```
+
 Esto te permitirá utilizar la librería y acceder a todas sus funciones.
 
 ##Algoritmos
-Los algoritmos que están disponibles desde la librería de gvpy también los encontrarás en la Caja de Herramientas, puedes acceder a ella en Herramientas-Geoprocesamiento-Caja de Herramientas.
+Los algoritmos que están disponibles desde la librería de gvpy también los encontrarás en la Caja de Herramientas, puedes acceder a ella en `Herramientas-Geoprocesamiento-Caja de Herramientas`
 
 Tendrás acceso tanto a los algoritmos de geoprocesamiento de gvSIG como de SEXTANTE.
 
@@ -49,15 +51,18 @@ Si abrimos la Consola de Jython (Herramientas-Scripting-Jython Console) y escrib
 Por ejemplo, si queremos buscar un algoritmos que genere vectores aleatorios podemos hacer una búsqueda del tipo:
 `gvpy.algSearch("aleatorias")`
 
+> La descripción de los algoritmos, tanto en gvSIG-Geoprocesos y SEXTANTE, se encuentra en español, así que para que funcionen las búsquedas tendrán que realizar en este idioma
+
 De los resultados que nos aparecen, podemos ver un algoritmo denominado: `randomvector`
 
 ##Parámetros del algoritmo
-Si queremos conocer más sobre el podemos escribir:
-`gvpy.algHelp("randomvector")`
+Si queremos conocer más sobre el podemos escribir el mismo comando que hemos usado antes:
+`gvpy.algSearch("randomvector")`
 
-Como resultado obtendremos la información del algoritmo y que parámetros necesita:
+Si la búsqueda coincide exactamente con el nombre de un algoritmo, la información que nos muestra gvpy será la información sobre ese algoritmo, su descripción y sus parámetros.
+
 ```
->>> gvpy.algHelp("randomvector")
+gvpy.algHelp("randomvector")
 * Algorithm help: 
 Capa vectorial con geometrias aleatorias
 *
@@ -84,6 +89,7 @@ Estos parámetros del ejemplo se refieren a:
 Ejemplo: `gvpy.runalg("randomvector", COUNT=10, TYPE=0)`
 
 Este algoritmo **ya lo podríamos ejecutar** en nuestra consola de Jython o en nuestros scripts.
+
 > Recuerda que siempre tienes que tener alguna **VISTA abierta**, sino el programa no sabrá sobre qué espacio trabajar. Por lo general, antes de ejecutar tus scripts (sobre todo ahora que aún se encuentra en versión de desarrollo), abre un proyecto nuevo, abre una vista nueva, y entonces, accede al módulo de Scripting de la manera que desees.
 
 Recomiendo escribirlo con el formato anterior pero también, siempre que guardemos el orden que nos dan los parámetros, podemos escribirlos sin especificar que atributo es.
@@ -93,10 +99,10 @@ Y para ser compatible con unas funcionalidades extra, también es posible si tod
 Ejemplo: `gvpy.runalg("randomvector", "10", "0")`
 
 ##Parámetros de entrada
-###Tipos de capas/polígonos
-Por si nos olvidamos qué número corresponde a qué tipo de polígono o de capa, existen unas constantes dentro de gvpy para ayudarnos a recodarlas. 
+###Tipos de capas / geometrías
+Por si nos olvidamos qué número corresponde a qué tipo de geometría o de capa, existen unas constantes dentro de gvpy para ayudarnos a recordarlas. 
 
-En el ejemplo anterior, el parámetro TYPE que hace referencia a este tipo de polígonos, podemos escribirlo de diferentes maneras ayudándonos de estas constantes.
+En el ejemplo anterior, el parámetro `TYPE` que hace referencia a este tipo de polígonos, podemos escribirlo de diferentes maneras ayudándonos de estas constantes.
 
 Tipo polígono: corresponde al valor 0, o también como gvpy.TYPE_POLYGON
 Tipo línea: corresponde al valor 1, o también como gvpy.TYPE_LINE
@@ -109,36 +115,35 @@ Estos dos ejemplos son iguales:
 ###Parametros de tipo Capa
 Si el **algoritmo nos pide un parámetro de tipo capa** (ya sea tabla, vectorial o raster), tendremos que cargar esta capa en una variable y pasarla como parámetro. Existen diversas formas para hacer esto:
 
-En la librería de gvsig existen diversas formas, tales como:
+En la **librería de gvsig** existen diversas formas, tales como:
 `currentLayer(), currentView().getLayer(name), loadShapeFile() `
 
-En la librería de gvsig_raster para capas raster:
+En la **librería de gvsig_raster** para capas raster:
 `loadRasterLayer()`
 
-En la librería de gvpy he creado unas extras a las que podrás acceder como son:
-`currentRaster()` carga el raster activo en la Vista
-`currentActive()` carga la primera capa activa en la Vista, sea del tipo que sea
+En la **librería de gvpy** he creado unas extras a las que podrás acceder como son:
+`gvpy.currentRaster()` carga el raster activo en la Vista
+`gvpy.currentActive()` carga la primera capa activa en la Vista, sea del tipo que sea
+`gvpy.getProjectLayer("View", "Layer name")` busca el nombre de una capa en la Vista
 
-Ejemplo de uso:
-```
-capa1 = currentView().getLayer("Countries") # or currentLayer()
-vista1 = currentProject().getView("World") # or currentView()
-v1 = gvpy.runalg("...", INPUT=capa1,...., EXTENT=vista1,...)
-```
-
-Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado** de la ejecución de un algoritmo (variable v1 en el ejemplo anterior), para poder ser usadas en otro pasadas como parámetro.
+Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado de la ejecución de un algoritmo**, para poder ser usadas en otro pasadas como parámetro.
 
 ##Archivos de salida
-Los archivos de salida (RESULT) son la capa o capas que generarán como resultado el ejecutar nuestro algoritmo. Si no se especifica se guardarán en una carpeta temporal (explicaremos más adelante el comando PATH para indicar ruta y nombre), pero además, **podemos capturar estas capas** para poder seguir utilizándolas en nuestro script recogiendo la salida del algoritmo:
+Los archivos de salida (RESULT) son la capa o capas que generarán como resultado el ejecutar nuestro algoritmo, también salidas de tipo texto. Si no se especifica se guardarán en una carpeta temporal:
+`C:\Users\Oscar\AppData\Local\Temp\tmp-andami`
 
+Nosotros estableceremos la ruta que queremos con el comando PATH para indicar ruta y nombre. 
+
+Además, **podemos capturar estas capas** para poder seguir utilizándolas en nuestro script recogiendo la salida del algoritmo:
 `capa = gvpy.runalg("randomvector",10,0)`
 
 De esta forma la variable `capa` contendrá las capas de gvSIG que son el resultado de lanzar el algoritmo. Si realizamos un `print capa` podremos ver como contiene una capa resultado.
 
-Si el algoritmo generase dos o más capas como resultado, nos devolvería una lista con todas ellas, y podríamos acceder a ellas de la forma `print capa[0], capa[1], capa[2]`
+Si el algoritmo generase dos o más capas como resultado, nos devolvería una lista con todas ellas, y podríamos acceder a ellas de la forma: 
+`print capa[0], capa[1], capa[2]`
 
 ##Atributos extra
-A parte de los parámetros del algoritmo, podremos designar otros **parámetros opcionales** que permitirán modificar otras variables tales como la ruta de salida, región de análisis, etc.
+A parte de los parámetros del algoritmo, podremos designar otros **atributos opcionales** que permitirán modificar otras variables tales como la ruta de salida, región de análisis, etc.
 
 ###EXTENT
 Define la región de análisis del algoritmo a utilizar. Por ejemplo en nuestros algoritmo anterior hará que las geometrías aleatorias estén todas contenidas en esta región.
@@ -164,8 +169,6 @@ Ejemplo:
 ###PATH
 Con este atributo podemos designar el nombre y la ruta de las capas resultado.
 
-**(En el futuro pienso cambiar el nombre de este atributo por RESULT)**
-
 Según las capas resultado que genere el algoritmo, esto lo podemos ver cuando utilizamos el comando gvpy.algHelp("") viendo cuantas capas de salida (output) tiene, nos lo devolverá de dos formas diferentes:
 - Si solo devuelve una capa, podemos introducir la ruta como: `PATH="C://capa_01.shp"`
 - Si devuelves dos o más, las podemos introducir en forma de lista: `PATH=["C://1.shp", "C://2.shp"]`
@@ -173,4 +176,17 @@ Según las capas resultado que genere el algoritmo, esto lo podemos ver cuando u
 ###OUTVIEW
 Nos permite seleccionar en que Vista queremos que se carguen los archivos de salida de nuestros algoritmos ejecutados.
 
-Podemos introducirla tanto como por su nombre `OUTVIEW="Vista1"`como por el objeto Vista `OUTVIEW=currentView()`
+Podemos introducirla tanto como por su nombre: 
+`OUTVIEW="Vista1"`
+
+o por el objeto de tipo Vista:
+`OUTVIEW=currentView()`
+
+##model2script: SEXTANTE model to Script
+Convierte tus ficheros `sextante.model`, creados por el Model Builder, en scripts. Tan solo utiliza la función `gvpy.model2script` con la ruta del fichero model, y la ruta del nuevo fichero que vas a crear. Luego deberás de mover tu script a la carpeta de Scripting que está en:
+`C:\Users\[user]\gvSIG\plugins\org.gvsig.scripting.app.extension\scripts`
+o copiar y pegar en un nuevo script.
+
+> Esta función esta en desarrollo y aún puede contener errores
+
+Ejemplo: `gvpy.model2script("C://gsoc//test02.model", "C://gsoc//nuevoScript.py")`

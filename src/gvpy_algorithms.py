@@ -11,9 +11,9 @@ import java.awt.geom
 from java.io import File
 
 def addDependencyWithPlugin(pluginCode):
-  pluginsManager = PluginsLocator.getManager()
-  scriptingPlugin = pluginsManager.getPlugin("org.gvsig.scripting.app.extension")
-  scriptingPlugin.addDependencyWithPlugin(pluginsManager.getPlugin(pluginCode))
+    pluginsManager = PluginsLocator.getManager()
+    scriptingPlugin = pluginsManager.getPlugin("org.gvsig.scripting.app.extension")
+    scriptingPlugin.addDependencyWithPlugin(pluginsManager.getPlugin(pluginCode))
 
 addDependencyWithPlugin("org.gvsig.geoprocess.app.mainplugin")
 
@@ -82,13 +82,20 @@ class Geoprocess:
           #Input params: Tranform STRING to NUMERIC
           cond1 = (str(param) == "Numerical Value")
           cond2 = (str(param) == "Selection")
-          cond3 = isinstance(paramValue, str)
-          #print str(param), type(paramValue)
-          if (cond1 or cond2) and cond3:
-              print paramValue,
-              paramValue = float(paramValue)
-              print "YES", paramValue
-
+          isstr = isinstance(paramValue, str)
+          cond4 = (str(param) == "Boolean")
+          cond5 = (str(param) == "Table Field")
+          
+          print str(param), type(paramValue)
+          if isstr:
+              if (cond1 or cond2):
+                  paramValue = float(paramValue)
+              elif cond4:
+                  paramValue = eval(paramValue.capitalize())
+              elif cond5:
+                  paramValue = int(paramValue)
+              else: #is str
+                  pass
           #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
@@ -155,7 +162,10 @@ class Geoprocess:
           if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
           AExtent = AnalysisExtent()
           print "| EXTENT from VIEW"
-          envelope = gvsig.currentView().getMap().getFullEnvelope()
+          try:
+              envelope = gvsig.currentView().getMap().getFullEnvelope()
+          except:
+              raise Exception("None open View")
           print "| Setting AExtent: ",
           try:
               xlow = envelope.getLowerCorner().getX()
@@ -199,7 +209,12 @@ class Geoprocess:
             out1 = outputSet.getOutput(0)
             out1.setOutputChannel(FileOutputChannel("New_name"))
             out1channel = out1.getOutputChannel()
-            out1channel.setFilename(path)
+            if isinstance(path, str):
+                out1channel.setFilename(path)
+            elif isinstance(path, list):
+                out1channel.setFilename(path[0])
+            else:
+                raise Exception("No valid path")
             print "| PATH: Good path"
         elif outputSet.getOutputDataObjectsCount() > 1 and isinstance(path, list):
             for n in xrange(0, outputSet.getOutputDataObjectsCount()):
@@ -345,7 +360,7 @@ def unionParameters(params, kwparams):
 def runalg(algorithmId,*params, **kwparams):
     kwparams = unionParameters(params, kwparams)
     geoprocess = Geoprocess()
-    r = geoprocess.execute(algorithmId, kwparams )
+    r = geoprocess.execute(algorithmId, kwparams)
     del(geoprocess)
     return r
     
@@ -376,12 +391,22 @@ def algHelp(geoalgorithmId):
 def algSearch(strSearch):
     print "Inicio de busqueda.."
     geoprocess = Geoprocess()
-    search = strSearch.encode('UTF-8')
+    search = strSearch.lower().encode('ASCII','ignore')
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
-        name = (algorithm.getName()).encode('UTF-8')
-        group = (algorithm.getGroup()).encode('UTF-8')
-        if (name.find(search) > 0) or (group.find(search)>0):
-             print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
+        name = (algorithm.getName()).lower().encode('ASCII','ignore')
+        group = (algorithm.getGroup()).lower().encode('ASCII','ignore')
+        #print type(name), type(group)
+        #print name, group
+        con1 = str(name).find(search) >= 0
+        con2 = str(group).find(search) >= 0
+        con3 = algorithmId.encode('ASCII').find(search) >= 0
+        #print con3, type(con3)
+        #print con1, con2, con3
+        if con1 or con2 or con3:
+            if con1 or con2:
+                print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
+            else:
+                print "*", algorithm.commandLineHelp.encode('UTF-8')
     print "..Busqueda finalizada"
     del(geoprocess)
     
@@ -403,9 +428,14 @@ def currentActive():
     
 def getProjectLayer(view,layer):
     """Get vector layer or raster"""
+    
     try:
-        return gvsig.currentProject().getView(view).getLayer(layer)
-    except:
+        if isinstance(view, str): view = gvsig.currentProject().getView(view)
+        if isinstance(layer, str):
+            return view.getLayer(layer)
+        else:
+            return layer
+    except: #Bug: Raster problem with getLayer
         for i in gvsig.currentProject().getView(view).getLayers():
             if i.name == layer: return i
             
@@ -491,7 +521,7 @@ def main(*args):
     #print r.encode("UTF-8")
     
     #algHelp("generaterandomnormal")
-    
+    """
     r = runalg("generaterandomnormal", 100,100, CELLSIZE=100, EXTENT=[250,250,0,500,500,0])
     r = runalg("generaterandomnormal", 10, 10, CELLSIZE=50, EXTENT=[500,500,0, 1000,1000,0])
     r = runalg("generaterandombernoulli", 50.0, CELLSIZE=25, EXTENT=[1000,1000,0, 1250,1250,0])
@@ -524,8 +554,16 @@ def main(*args):
     print gvsig.currentProject().getView(vista)
     
     
+    endid = "_104.shp"
     v = runalg("randomvector", 20, 0)
+    v2 = runalg("randomvector", 20, 0,PATH=["C://gvsig//i"+endid])
+    #fitpoints = runalg("fitnpointsinpolygon",v, "2", "74", 1, 0)
+    intersection = runalg("gvSIG-intersection", v, getProjectLayer(gvsig.currentView(),"i_102"), True, True,PATH=["C://gvsig//inter_pol"+endid,"C://gvsig//inter_line"+endid,"C://gvsig//inter_point"+endid])
+    """
+    algSearch("nodelines")
+    #ID:  extractendpointsoflines  || GROUP:  Topolog????a  || NAME:  Obtener extremos de l??neas
     
+    #v7 = runalg("gvSIG-buffer", v, "False", 50.0, 0, "false", "true", 0, 0)
     #print "**Addfield: ", gvpy.addField(v, "ID5")
     #import gvpy
     #gvpy.addField(v, "ID89")
