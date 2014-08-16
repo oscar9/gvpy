@@ -403,13 +403,9 @@ def algSearch(strSearch):
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
         name = (algorithm.getName()).lower().encode('ASCII','ignore')
         group = (algorithm.getGroup()).lower().encode('ASCII','ignore')
-        #print type(name), type(group)
-        #print name, group
         con1 = str(name).find(search) >= 0
         con2 = str(group).find(search) >= 0
         con3 = algorithmId.encode('ASCII').find(search) >= 0
-        #print con3, type(con3)
-        #print con1, con2, con3
         if con1 or con2 or con3:
             if con1 or con2:
                 print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
