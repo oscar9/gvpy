@@ -33,7 +33,7 @@ If you have opened gvSIG, you should **close it and open it again**.
 
 Now, to use this library in your scripts, you just have to write at the beginning of your scripts or in the Jython Console this:
 
-```
+```python
 import gvpy
 ```
 
@@ -61,7 +61,7 @@ If we want to know more about this algorithm we can write the same function that
 
 If the name match with the name of one algorithm, gvpy will show you the info about that algorithm, description and parameters:
 
-```
+```python
 gvpy.algSearch("randomvector")
 * Algorithm help: 
 Capa vectorial con geometrias aleatorias
