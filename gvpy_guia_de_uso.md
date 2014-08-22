@@ -33,7 +33,7 @@ Si tenías gvSIG abierto, deberás de cerrarlo y volverlo a abrir.
 
 Ahora, para poder acceder a esta librería en tus scripts lo único que debes de hacer es escribir al inicio de tu código o en la Consola de Jython esto:
 
-```
+```python
 import gvpy
 ```
 
@@ -61,7 +61,7 @@ Si queremos conocer más sobre el podemos escribir el mismo comando que hemos us
 
 Si la búsqueda coincide exactamente con el nombre de un algoritmo, la información que nos muestra gvpy será la información sobre ese algoritmo, su descripción y sus parámetros.
 
-```
+```python
 gvpy.algHelp("randomvector")
 * Algorithm help: 
 Capa vectorial con geometrias aleatorias
