@@ -70,7 +70,7 @@ This library will allow you to launch one geoprocess with your jython script.
 For now, this library will be to develop easy access to the scripting functions. With less code will be more easy, and more powerful.
 
 #####Ex: Shortcuts for gvSIG Scripting
-```
+```python
     #New shape
     layer3 = newLayer(layer,"C:/gvsig/polygon_shape", 3) 
     #Add new features 
