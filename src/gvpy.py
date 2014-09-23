@@ -48,6 +48,7 @@ class Geoprocess:
     self.__FlyrVectIVectorLayer = None
     self.__outputFactory = SextanteGUI.getOutputFactory()
     self.__algorithms = dict()
+    self.__defaultAE = None #default AExtension
 
     keySetIterator = Sextante.getAlgorithms().keySet().iterator()
     while(keySetIterator.hasNext()):
@@ -80,6 +81,8 @@ class Geoprocess:
   def __defineParameters(self, algorithm, kwparams):
       """ Define input parameters """
       params = algorithm.getParameters()
+      print self.__defaultAE
+
       for i in xrange(0,params.getNumberOfParameters()):
           param = params.getParameter(i)
           if param.getParameterName() in kwparams:
@@ -104,6 +107,7 @@ class Geoprocess:
                   paramValue = int(paramValue)
               else: #is str
                   pass
+
           #Vector to SEXTANTE
           if param.getParameterTypeName() == "Vector Layer":
               if isinstance(paramValue, str):
@@ -111,6 +115,13 @@ class Geoprocess:
                   paramValue = self.__createSextanteLayer(layer())
               else:
                   paramValue = self.__createSextanteLayer(paramValue())
+
+              print "extent add+"
+              if self.__defaultAE == None:
+                  self.__defaultAE = AnalysisExtent(paramValue)
+              else:
+                  self.__defaultAE.addExtent(AnalysisExtent(paramValue))
+
           #Raster to SEXTANTE
           elif param.getParameterTypeName() == "Raster Layer":
               if isinstance(paramValue, str):
@@ -118,6 +129,13 @@ class Geoprocess:
                   paramValue = self.__createSextanteRaster(layer)
               else:
                   paramValue = self.__createSextanteRaster(paramValue)
+
+              print "extent add+"
+              if self.__defaultAE == None:
+                  self.__defaultAE = AnalysisExtent(paramValue)
+              else:
+                  self.__defaultAE.addExtent(AnalysisExtent(paramValue))
+
           #Table to SEXTANTE
           elif param.getParameterTypeName() == "Table":
               if isinstance(paramValue, str):
@@ -169,28 +187,37 @@ class Geoprocess:
           print ("| Not Extent: No input data")
           if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
           AExtent = AnalysisExtent()
-          print "| EXTENT from VIEW"
-          try:
-              envelope = gvsig.currentView().getMap().getFullEnvelope()
-          except:
-              raise Exception("None open View")
-          print "| Setting AExtent: ",
-          try:
-              xlow = envelope.getLowerCorner().getX()
-              ylow = envelope.getLowerCorner().getY()
-              zlow = 0
-              xup = envelope.getUpperCorner().getX()
-              yup = envelope.getUpperCorner().getY()
-              zup = 0
-              print "| View: ",
-              print xlow, ylow, xup,yup
-          except:
-              xlow, ylow, zlow, xup, yup, zup = 0,0,0,100,100,0
-              print "| Default:", xlow, ylow, xup, yup
-          frame = Rectangle2D.Double(xlow, ylow, xup, yup)
-          AExtent.setXRange(xlow, xup, False)
-          AExtent.setYRange(ylow, yup, False)
-          AExtent.setZRange(zlow, zup, False)
+
+          print self.__defaultAE
+
+          if self.__defaultAE != None:
+              print "| Extent from Algorithm Layers"
+              AExtent = self.__defaultAE
+          else:
+              try:
+                  print "| Extent from View"
+                  envelope = gvsig.currentView().getMap().getFullEnvelope()
+              except:
+                  raise Exception("None open View")
+
+              print "| Setting AExtent: ",
+              try: #from view
+                  xlow = envelope.getLowerCorner().getX()
+                  ylow = envelope.getLowerCorner().getY()
+                  zlow = 0
+                  xup = envelope.getUpperCorner().getX()
+                  yup = envelope.getUpperCorner().getY()
+                  zup = 0
+                  print "| View: ",
+                  print xlow, ylow, xup,yup
+              except: # default 
+                  xlow, ylow, zlow, xup, yup, zup = 0,0,0,100,100,0
+                  print "| Default:", xlow, ylow, xup, yup
+
+              frame = Rectangle2D.Double(xlow, ylow, xup, yup)
+              AExtent.setXRange(xlow, xup, False)
+              AExtent.setYRange(ylow, yup, False)
+              AExtent.setZRange(zlow, zup, False)
           algorithm.setAnalysisExtent(AExtent)
           
       #Set: cellsize
