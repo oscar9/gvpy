@@ -198,12 +198,14 @@ class Geoprocess:
           AExtent.setCellSize(kwparams['CELLSIZE'])
           print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
       else:
+          AExtent.setCellSize(AExtent.getCellSize())
           print "| Cellsize: ", AExtent.getCellSize()
           
       if 'CELLSIZEZ' in kwparams.keys():
           AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
           print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
       else:
+          AExtent.setCellSize(AExtent.getCellSizeZ())
           print "| CellsizeZ: ", AExtent.getCellSizeZ()
       algorithm.setAnalysisExtent(AExtent)
       print ("| Set Extent")
