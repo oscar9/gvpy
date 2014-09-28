@@ -3,6 +3,16 @@
 **Working for gvSIG and OSGeo Foundation**
 
 ----------
+BETA Version
+Developing:
+
+Valid parameters of the algorithms for use: 
+- Vector Layer
+- Raster Layer
+- Table
+- String, boolean and number types
+
+----------
 ###gvpy: USER GUIDE in English
 https://github.com/oscar9/gvpy/blob/master/gvpy_user_guide.md
 
