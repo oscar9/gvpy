@@ -328,7 +328,7 @@ class Geoprocess:
         if isinstance(value, unicode):
             outList.append(value.encode("UTF-8"))
         elif isinstance(value, FLyrVect):
-            print "|\t Value:", value.getName()
+            print "|\t Value:", value.getName().encode("UTF-8")
             path = value.getDataStore().getFullName()
             print "|\t\tPath: ", path
             if "OUTVIEW" in kwparams:
