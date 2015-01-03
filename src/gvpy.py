@@ -99,8 +99,10 @@ class Geoprocess:
           
           print str(param), type(paramValue)
           if isstr:
-              if (cond1 or cond2):
+              if cond1:
                   paramValue = float(paramValue)
+              elif cond2:
+                  paramValue = int(paramValue)
               elif cond4:
                   paramValue = eval(paramValue.capitalize())
               elif cond5:
