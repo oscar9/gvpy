@@ -17,6 +17,7 @@ import java.awt
 import java.awt.event
 import java.awt.geom
 from java.io import File
+import xml.dom.minidom
 
 def addDependencyWithPlugin(pluginCode):
     pluginsManager = PluginsLocator.getManager()
