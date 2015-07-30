@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # File: gvpy.py
 # Version: v0.01
@@ -17,7 +17,6 @@ import java.awt
 import java.awt.event
 import java.awt.geom
 from java.io import File
-import xml.dom.minidom
 
 def addDependencyWithPlugin(pluginCode):
     pluginsManager = PluginsLocator.getManager()
@@ -78,41 +77,44 @@ class Geoprocess:
     
   def getAlgorithms(self):
       return self.__algorithms
-    
-  def __defineParameters(self, algorithm, kwparams):
-      """ Define input parameters """
-      params = algorithm.getParameters()
-      print self.__defaultAE
-
-      for i in xrange(0,params.getNumberOfParameters()):
-          param = params.getParameter(i)
-          if param.getParameterName() in kwparams:
-              paramValue = kwparams[param.getParameterName()]
-          else:
-              paramValue = kwparams[i]
-              
-          #Input params: Tranform STRING to NUMERIC
-          cond1 = (str(param) == "Numerical Value")
-          cond2 = (str(param) == "Selection")
-          isstr = isinstance(paramValue, str)
-          cond4 = (str(param) == "Boolean")
-          cond5 = (str(param) == "Table Field")
+      
+  def __defineParameters_str2value(self, i, param, kwparams):
+      if param.getParameterName() in kwparams:
+          paramValue = kwparams[param.getParameterName()]
+      else:
+          paramValue = kwparams[i]
           
-          print str(param), type(paramValue)
-          if isstr:
-              if cond1:
-                  paramValue = float(paramValue)
-              elif cond2:
-                  paramValue = int(paramValue)
-              elif cond4:
-                  paramValue = eval(paramValue.capitalize())
-              elif cond5:
-                  paramValue = int(paramValue)
-              else: #is str
-                  pass
+      #Input params: Tranform STRING to NUMERIC
+      cond1 = (str(param) == "Numerical Value")
+      cond2 = (str(param) == "Selection")
+      isstr = isinstance(paramValue, str)
+      cond4 = (str(param) == "Boolean")
+      cond5 = (str(param) == "Table Field")
+      if "Multi" in (str(param)): 
+          cond6 = True
+      else:
+          cond6 = False
 
-          #Vector to SEXTANTE
-          if param.getParameterTypeName() == "Vector Layer":
+      if isstr:
+          if cond1:
+              paramValue = float(paramValue)
+          elif cond2:
+              paramValue = int(paramValue)
+          elif cond4:
+              paramValue = eval(paramValue.capitalize())
+          elif cond5:
+              paramValue = int(paramValue)
+          elif cond6:
+              #  <type 'java.util.ArrayList'>
+              paramValue = list(paramValue)
+          else: #is str
+              pass
+      print "Param Name: ", param.getParameterName()
+      print "Param: ", param
+      print "Resulta: ", paramValue, type(paramValue)
+      return paramValue
+    
+  def __defineParameters_vector2sextante(self, param, paramValue):
               if isinstance(paramValue, str):
                   layer = gvsig.currentView().getLayer(paramValue)
                   paramValue = self.__createSextanteLayer(layer())
@@ -124,35 +126,182 @@ class Geoprocess:
                   self.__defaultAE = AnalysisExtent(paramValue)
               else:
                   self.__defaultAE.addExtent(AnalysisExtent(paramValue))
+              print "PARAM VALUE 1: ", paramValue
+              return paramValue
+                                 
+  def __defineParameters_multi2sextante(self, param, paramValue):
+              print "PARAM VALUE PRE", paramValue
+              paramValue2 = []
+              for i in paramValue:
+                  if isinstance(i, str):
+                      layer = gvsig.currentView().getLayer(i)
+                      i = self.__createSextanteLayer(layer())
+                      ii = self.__createSextanteLayer(layer())
+                      
+                  else:
+                      print type(i)
+                      if isinstance(i, tuple): #si dentro de la lista viene una tupla identificamos que es un raster y su banda
+                          from es.unex.sextante.parameters import RasterLayerAndBand
+                          rlb = RasterLayerAndBand(self.__createSextanteRaster(i[0]),i[1])  #puesta numero de banda 
+                          
+                          ii = self.__createSextanteRaster(i[0])
+                          i = rlb
+                          print "*************************** RASTERLAYERBAND", rlb
 
-          #Raster to SEXTANTE
-          elif param.getParameterTypeName() == "Raster Layer":
+                      else:
+                          if str(type(i)) == "<type 'org.gvsig.raster.fmap.layers.DefaultFLyrRaster'>":
+                              ii = self.__createSextanteRaster(i)
+                              i = self.__createSextanteRaster(i)
+                          else:
+                              ii = self.__createSextanteLayer(i())
+                              i = self.__createSextanteLayer(i())
+
+                      print "createStextenatnte Layer i :", i
+                      paramValue2.append(i)
+                      
+                  if self.__defaultAE == None:
+                          try:
+                              self.__defaultAE = AnalysisExtent(AnalysisExtent(ii))
+                              self.__defaultAE.setCellSize(0.49) ### test
+                              self.__defaultAE.setCellSizeZ(0.49)  ### test
+                              #self.__defaultAE.addExtent( )
+                              
+                              
+                              print "@@@@@@@@@@@@@@@@@@@@@@@@@@@ ini defaultAE"
+                          except:
+                              try:
+                                  self.__defaultAE = AnalysisExtent(ii())
+                              except:
+                                  self.__defaultAE = AnalysisExtent(ii)
+                  elif self.__defaultAE != None:
+                          try:
+                              ae = self.__defaultAE
+                              #ae.addExtent(AnalysisExtent(ii))
+                              print "@@@@@@@@@@@@@@@@@@@@@@@@@@@ diferente defaultAE"
+                          except:
+                             
+                              self.__defaultAE.addExtent(AnalysisExtent(ii()))
+                
+                  """
+                  if self.__defaultAE == None:
+                      try:
+                          self.__defaultAE = AnalysisExtent(i)
+                      except:
+                          print "excepttttttttttttttt", i
+                          ae = i.getRasterLayer()
+                          self.__defaultAE = AnalysisExtent(ae)
+                  else:
+                      try:
+                          
+                          self.__defaultAE.addExtent(AnalysisExtent(i))
+                      except:
+                          print 'exceptttttttttttttt 222222222"', i
+                          ae = i.getRasterLayer()
+                          print 'ae',ae
+                          self.__defaultAE.addExtent(AnalysisExtent(ae))
+                          #print self.__defaultAE
+                  """
+
+              paramValue = paramValue2
+              #print "PARAM VALUE 2: ", paramValue
+              from java.util import ArrayList
+              #print "****************** CONDI6: ", paramValue
+              #print "****************** CONDI6: ", ArrayList(paramValue)
+              newParamValue = ArrayList()
+              for i in paramValue:
+                  newParamValue.add(i)
+              paramValue = newParamValue
+              #print "***************** CONDI6: ", paramValue
+              #from es.unex.sextante.parameters import ParameterMultipleInput
+              #pmi = ParameterMultipleInput()
+              #pmi.setParameterValue(paramValue)
+              #paramValue = pmi
+              print "#####################################################################"
+              return paramValue
+            
+  def __defineParameters_raster2sextante(self, param, paramValue):
               if isinstance(paramValue, str):
                   layer = gvsig.currentView().getLayer(paramValue)
                   paramValue = self.__createSextanteRaster(layer)
               else:
                   paramValue = self.__createSextanteRaster(paramValue)
 
-              print "extent add+"
+              print "** extent add+"
               if self.__defaultAE == None:
                   self.__defaultAE = AnalysisExtent(paramValue)
               else:
                   self.__defaultAE.addExtent(AnalysisExtent(paramValue))
-
-          #Table to SEXTANTE
-          elif param.getParameterTypeName() == "Table":
+              return paramValue
+              
+  def __defineParameters_table2sextante(self, param, paramValue):
               if isinstance(paramValue, str):
                   layer = gvsig.currentProject().getTable(paramValue)
                   paramValue = self.__createSextanteTable(layer())
               else:
                   paramValue = self.__createSextanteTable(paramValue())
+              return paramValue
+            
+  def __defineParameters(self, algorithm, kwparams):
+      """ Define input parameters """
+      params = algorithm.getParameters()
+      print self.__defaultAE
 
+      for i in xrange(0,params.getNumberOfParameters()):
+          param = params.getParameter(i)
+          print "****************************************** PARAMETER *******************************************"
+          #print "********************* ", dir(param)
+          #print "********************* ", type(param)
+          #print "********************* ", param.getParameterName()
+          #print "********************* ", param.getParameterDescription()
+          #print "********************* ", param.getParameterTypeName()
+          #print "********************* ", param.getParameterTooltip()
+          #print "********************* ", param.getParameterClass()
+          #print "********************* ", param.getClass()
+ 
+          #print "********************* ", param.parameterName
+          #print "********************* ", param.parameterTypeName
+          
+          paramValue = self.__defineParameters_str2value( i, param, kwparams)
+          #print type(paramValue)
+          
+          #Vector to SEXTANTE
+          print  "PARAMETER TYPE: ",param.getParameterTypeName()
+          if param.getParameterTypeName() == "Vector Layer":
+              paramValue = self.__defineParameters_vector2sextante(param, paramValue)
+              
+          # Multiple input: Vector and Raster
+          elif param.getParameterTypeName() == "Multiple Input": #para vectores y raster
+              paramValue = self.__defineParameters_multi2sextante(param, paramValue)
+          #Raster to SEXTANTE
+          elif param.getParameterTypeName() == "Raster Layer":
+              paramValue = self.__defineParameters_raster2sextante(param, paramValue)
+          #Table to SEXTANTE
+          elif param.getParameterTypeName() == "Table":
+              paramValue = self.__defineParameters_table2sextante(param, paramValue)
           #Set parameter value
+          #print  "@@@@@@@@@@@@@@@@@@@@@@@@ cluster error: ", paramValue, type(paramValue)
+          #print "@@@@@@@@@@@@@@@@@@@@@@@@ ", type(param)
+          
           param.setParameterValue(paramValue)
+          #print "@@@@@@@@@@@@@@", dir(param)
+
+          #print "@@@@@@@@@@@@@@", param.isParameterValueCorrect()
+          #print "@@@@@@@@@@@@@@ param:", param
+          #print "@@@@@@@@@@@@@@ ", param.getParameterValueAsArrayList()
       
+          
   def __defineExtent(self, algorithm, kwparams):
       """ Define Analysis Extent """
+      if self.__defaultAE == None: 
+          print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ cambiar extent"
+          change=True
+      else: 
+          print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ no cambiar extent"
+          change = False
+          AExtent = self.__defaultAE
+      changeCell = False
       if 'EXTENT' in kwparams.keys() and algorithm.getUserCanDefineAnalysisExtent() :
+          changeCell = True
           frame = kwparams['EXTENT']
           if isinstance(frame, str): frame = gvsig.currentView().getLayer(frame)
           #print ("|"+str(frame)+"||"+str(type(frame)))
@@ -173,26 +322,30 @@ class Geoprocess:
               print "| EXTENT from RASTER"
               layer = self.__createSextanteRaster(frame)
               AExtent = AnalysisExtent(layer)
+              changeCell = False
+              #AExtent.setZRange(0, 1, True)
+              print AExtent
           elif isinstance(frame, list):
               print "| EXTENT from LIST"
               AExtent = AnalysisExtent()
+              AExtent.setCellSize(0.49)
+              AExtent.setCellSizeZ(0.49)
               xlow, ylow, zlow, xup, yup, zup  = frame[0], frame[1], frame[2], frame[3], frame[4], frame[5]
-              AExtent.setXRange(xlow, xup, False)
-              AExtent.setYRange(ylow, yup, False)
-              AExtent.setZRange(zlow, zup, False)
+              AExtent.setXRange(xlow, xup, True)
+              AExtent.setYRange(ylow, yup, True)
+              AExtent.setZRange(zlow, zup, True)
           elif isinstance(frame, gvsig.Layer):
               print "| EXTENT from Layer"
               layer = self.__createSextanteLayer(frame())
               AExtent = AnalysisExtent(layer)
           else:
               raise Exception("Not Extent Define")
-      else:
+          algorithm.setAnalysisExtent(AExtent)
+          
+      elif change == True:
           print ("| Not Extent: No input data")
-          if algorithm.canDefineOutputExtentFromInput(): algorithm.adjustOutputExtent()
           AExtent = AnalysisExtent()
-
-          print self.__defaultAE
-
+          changeCell = True
           if self.__defaultAE != None:
               print "| Extent from Algorithm Layers"
               AExtent = self.__defaultAE
@@ -224,19 +377,23 @@ class Geoprocess:
           algorithm.setAnalysisExtent(AExtent)
           
       #Set: cellsize
+      
       if 'CELLSIZE' in kwparams.keys():
           AExtent.setCellSize(kwparams['CELLSIZE'])
           print "| New Cellsize: ", kwparams['CELLSIZE'], AExtent.getCellSize()
-      else:
+      elif changeCell == True:
           AExtent.setCellSize(AExtent.getCellSize())
           print "| Cellsize: ", AExtent.getCellSize()
           
       if 'CELLSIZEZ' in kwparams.keys():
           AExtent.setCellSizeZ(kwparams['CELLSIZEZ'])
           print "| New Cellsize Z: ", kwparams['CELLSIZEZ'], AExtent.getCellSizeZ()
-      else:
+      elif changeCell == True:
           AExtent.setCellSize(AExtent.getCellSizeZ())
           print "| CellsizeZ: ", AExtent.getCellSizeZ()
+      
+      print "Å‚Å‚ end extent: ", AExtent
+      #AExtent.setZRange(0.0, 0.0, True)
       algorithm.setAnalysisExtent(AExtent)
       print ("| Set Extent")
       
@@ -321,6 +478,7 @@ class Geoprocess:
                           x += 1
                       ret[str(x)] = value
                       break
+    print "@@@@@@@@ ret:", ret
     return ret
 
   def __returnOutputObjects(self, r, kwparams):
@@ -454,6 +612,26 @@ def currentRaster():
       if i.isActive() and isinstance(i, DefaultFLyrRaster):  return i
     return None
     
+def firstRaster():
+    """Return first raster active layer on the View"""
+    layers = gvsig.currentView().getLayers()
+    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    for i in lyrlist:
+      if isinstance(i, DefaultFLyrRaster):  return i
+    return None
+
+def sRaster(n):
+    """Return first raster active layer on the View"""
+    layers = gvsig.currentView().getLayers()
+    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    count = 0
+    for i in lyrlist:
+      if isinstance(i, DefaultFLyrRaster):  
+          if count == n:
+              return i
+          else:
+             count+=1
+    return None
 def currentActive():
     """Return first active layer on the View"""
     layers = gvsig.currentView().getLayers()
@@ -584,7 +762,7 @@ def main(*args):
 
 
     """
-    vista= "Sin título"
+    vista= "Sin tÃ­tulo"
     #vista = vista.encode("UTF-8")
     
     print gvsig.currentProject().getView(vista)
@@ -596,7 +774,7 @@ def main(*args):
     #fitpoints = runalg("fitnpointsinpolygon",v, "2", "74", 1, 0)
     intersection = runalg("gvSIG-intersection", v, getProjectLayer(gvsig.currentView(),"i_102"), True, True,PATH=["C://gvsig//inter_pol"+endid,"C://gvsig//inter_line"+endid,"C://gvsig//inter_point"+endid])
     """
-    algSearch("nodelines")
+    #algSearch("nodelines")
     #ID:  extractendpointsoflines  || GROUP:  Topolog????a  || NAME:  Obtener extremos de l??neas
     
     #v7 = runalg("gvSIG-buffer", v, "False", 50.0, 0, "false", "true", 0, 0)
@@ -605,6 +783,27 @@ def main(*args):
     #gvpy.addField(v, "ID89")
     #runalg("vectoraddfield", v, "Campo1", 0, 1, 0, 1, PATH="C:\\Users\\Oscar\\Desktop\\testi.shp")
     #layer = runalg("randomvector", 20, TYPE_LINE, EXTENT=[0,0,0,500,500,0], OUTVIEW="Po1")
+
+    #2015-1-2
+
+    
+    #runalg("graticulebuilder", "10.0", "10.0", 1, PATH="/home/oscm/temp/reticula10.shp")
+    #layer1 = gvsig.currentView().getLayer("1")
+    #layer2 = gvsig.currentView().getLayer("2")
+    #print layer1, layer2
+    #
+    algHelp("cluster")
+    #runalg("merge", layer1, [layer2])
+
+    layer1 = sRaster(0)
+    layer2 = sRaster(1)
+    print "Layer1: ", layer1.name, layer1, layer1.getCellSize()
+    print "Layer2: ", layer2.name, layer2, layer2.getCellSize()
+    
+    
+    runalg("cluster" , INPUT=[(layer1, 0),(layer2,0)] , NUMCLASS=3)#, CELLSIZE=layer1.getCellSize(), CELLSIZEZ=1)#,EXTENT=layer1)
+    #runalg("mergegrids", [layer1, layer2], "0")
+    
     print "end"
     
 def mainLibrary():
@@ -747,7 +946,7 @@ def addFeature(layer, *params, **kwparams):
         value = itera.next()
         for sch in schValues: 
             #Si el campo a modificar es una geometria
-            #print "Comprobación:", sch, isinstance(value, list)
+            #print "ComprobaciÃ³n:", sch, isinstance(value, list)
             #re comprobacion si es campo geometry
             #bug: Comprobar si es lista o objeto geom  en primer if
             #... sch == "Geometry" and ES UNA LISTA
@@ -866,9 +1065,15 @@ def model2script(pathXML, pathFile):
     #pathXML = str(pathXML[0])
     #pathXML = 'C:/gsoc/test02.model'
     #pathFILE = 'C:/gsoc/script0002.py'
-
+    import os.path
+    if os.path.isfile(pathXML)==True:
+        pass
+    else:
+        print "No valid model file path"
+        return
     fileFile = open(pathXML, 'r')
     document = fileFile.read()
+    import xml.dom.minidom
     root = xml.dom.minidom.parseString(document)
     #root
     inputObject = {}
@@ -921,6 +1126,7 @@ def model2script(pathXML, pathFile):
 import gvpy
 import gvsig
 import geom
+import gvsig_raster
     
 def main(*args):
 """)
@@ -959,3 +1165,5 @@ def main(*args):
         gvpyFile.write( tab + gvpy + "\n\n" )
     
     gvpyFile.close()
+
+
