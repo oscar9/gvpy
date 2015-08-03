@@ -128,6 +128,14 @@ En la **librería de gvpy** he creado unas extras a las que podrás acceder como
 
 Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado de la ejecución de un algoritmo**, para poder ser usadas en otro pasadas como parámetro.
 
+### Parámetros Multi input (beta)
+Si son de tipo Vector se incluirán mediante una lista [vectorLayer1, vectorLayer2, ..... ]
+Si son de tipo Raster se incluirán mediante una tupla (rasterlayer1, rasterlayer2, ..... )
+
+### Parámetros Fixed table
+Se tienen que añadir como texto (string), con una sucesión de números a modo de lista.
+Ej. LUT="1,1,1,0,0,0"
+
 ##Archivos de salida
 Los archivos de salida (RESULT) son la capa o capas que generarán como resultado el ejecutar nuestro algoritmo, también salidas de tipo texto. Si no se especifica se guardarán en una carpeta temporal:
 `C:\Users\Oscar\AppData\Local\Temp\tmp-andami`
@@ -141,9 +149,6 @@ De esta forma la variable `capa` contendrá las capas de gvSIG que son el result
 
 Si el algoritmo generase dos o más capas como resultado, nos devolvería una lista con todas ellas, y podríamos acceder a ellas de la forma: 
 `print capa[0], capa[1], capa[2]`
-### Parámetros Multi input (beta)
-Si son de tipo Vector se incluirán mediante una lista [vectorLayer1, vectorLayer2, ..... ]
-Si son de tipo Raster se incluirán mediante una tupla (rasterlayer1, rasterlayer2, ..... )
 
 ##Atributos extra
 A parte de los parámetros del algoritmo, podremos designar otros **atributos opcionales** que permitirán modificar otras variables tales como la ruta de salida, región de análisis, etc.
