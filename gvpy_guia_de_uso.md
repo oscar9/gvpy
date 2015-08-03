@@ -141,6 +141,9 @@ De esta forma la variable `capa` contendrá las capas de gvSIG que son el result
 
 Si el algoritmo generase dos o más capas como resultado, nos devolvería una lista con todas ellas, y podríamos acceder a ellas de la forma: 
 `print capa[0], capa[1], capa[2]`
+### Parámetros Multi input (beta)
+Si son de tipo Vector se incluirán mediante una lista [vectorLayer1, vectorLayer2, ..... ]
+Si son de tipo Raster se incluirán mediante una tupla (rasterlayer1, rasterlayer2, ..... )
 
 ##Atributos extra
 A parte de los parámetros del algoritmo, podremos designar otros **atributos opcionales** que permitirán modificar otras variables tales como la ruta de salida, región de análisis, etc.
