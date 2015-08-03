@@ -588,7 +588,7 @@ def algHelp(geoalgorithmId):
     del(geoprocess)
 
 def algSearch(strSearch):
-    print "Inicio de busqueda.."
+    print "\nInicio de busqueda.."
     geoprocess = Geoprocess()
     search = strSearch.lower().encode('ASCII','ignore')
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
@@ -602,7 +602,7 @@ def algSearch(strSearch):
                 print "ID: ", algorithmId, " || GROUP: ", algorithm.getGroup().encode('UTF-8'), " || NAME: ", algorithm.getName().encode('UTF-8')
             else:
                 print "*", algorithm.commandLineHelp.encode('UTF-8')
-    print "..Busqueda finalizada"
+    print "..Busqueda finalizada\n"
     del(geoprocess)
 
 def currentRaster():
