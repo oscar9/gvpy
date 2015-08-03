@@ -129,12 +129,17 @@ En la **librería de gvpy** he creado unas extras a las que podrás acceder como
 Además, como explico en el siguiente apartado, **se pueden capturar las capas resultado de la ejecución de un algoritmo**, para poder ser usadas en otro pasadas como parámetro.
 
 ### Parámetros Multi input (beta)
-Si son de tipo Vector se incluirán mediante una lista [vectorLayer1, vectorLayer2, ..... ]
-Si son de tipo Raster se incluirán mediante una tupla (rasterlayer1, rasterlayer2, ..... )
+Si son de tipo Vector se incluirán mediante una lista Ej. [vectorLayer1, vectorLayer2, ..... ]
+Si son de tipo raster + banda se incluyen con una tupla Ej. (raster, 1)
+
+Ej.
+runalg("vectorizetrees", [(sRaster(0),1), (sRaster(1),1)], "capa1", "1.0", "1.0", "#")
 
 ### Parámetros Fixed table
 Se tienen que añadir como texto (string), con una sucesión de números a modo de lista.
 Ej. LUT="1,1,1,0,0,0"
+
+
 
 ##Archivos de salida
 Los archivos de salida (RESULT) son la capa o capas que generarán como resultado el ejecutar nuestro algoritmo, también salidas de tipo texto. Si no se especifica se guardarán en una carpeta temporal:
