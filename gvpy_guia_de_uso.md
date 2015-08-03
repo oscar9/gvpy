@@ -10,10 +10,10 @@
 Github con el código y actualizaciones del proyecto: https://github.com/oscar9/gvpy
 Explicación del proyecto: http://oscar9.github.io/gvpy/
 
-Autor: **Óscar Martínez Olmos**
-Email: <masquesig@gmail.com>
-Blog: http://www.masquesig.com
-Twitter: https://twitter.com/masquesig
+Autor: **Óscar Martínez Olmos** 
+Email: <masquesig@gmail.com> 
+Blog: http://www.masquesig.com 
+Twitter: https://twitter.com/masquesig 
 
 ----------
 
