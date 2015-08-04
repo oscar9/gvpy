@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # File: gvpy.py
-# Version: v0.01
+# Version: v0.3
 #
 
 __author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
@@ -9,7 +9,8 @@ __author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
 import gvsig
 import geom
 import gvsig_raster
-
+from org.gvsig.app import ApplicationLocator
+from org.gvsig.fmap.dal import DALLocator
 import os.path
 from org.gvsig.andami import PluginsLocator
 from org.gvsig.fmap.mapcontext import MapContextLocator
@@ -493,11 +494,17 @@ class Geoprocess:
             print "|\t Value:", value.getName().encode("UTF-8")
             path = value.getDataStore().getFullName()
             print "|\t\tPath: ", path
-            if "OUTVIEW" in kwparams:
+            if "OUTVIEW" in kwparams: # other view
                 viewName = (kwparams["OUTVIEW"]).decode("UTF-8")
-                value = loadShapeFileNew(str(path), view=viewName)
-            else:
-                value = loadShapeFileNew(str(path))
+                if "TOCNAME" in kwparams:
+                    value = loadShapeFileNew(str(path), view=viewName, tocName=kwparams["TOCNAME"])
+                else:
+                    value = loadShapeFileNew(str(path), view=viewName)
+            else: #current view
+                if "TOCNAME" in kwparams:
+                    value = loadShapeFileNew(str(path), tocName=kwparams["TOCNAME"])
+                else:
+                    value = loadShapeFileNew(str(path))
 
 
             outList.append(value)
@@ -505,7 +512,11 @@ class Geoprocess:
             print "|\t Value:", value.getName()
             print "|\t\t", value.getFileName()[0]
             #Not yet: Waiting for new loadRasterLayer that can set OUTVIEW
-            value = gvsig_raster.loadRasterLayer(value.getFileName()[0])
+            if "TOCNAME" in kwparams:
+                value = loadRasterLayerNew(value.getFileName()[0], tocName=kwparams["TOCNAME"])
+            else:
+                value = loadRasterLayerNew(value.getFileName()[0])
+                
             outList.append(value)
         else:
             print "|\t Non-type"
@@ -564,12 +575,12 @@ def runalg(algorithmId,*params, **kwparams):
     return r
 
 
-def loadShapeFileNew(shpFile, CRS='CRS:84', active=False, view=gvsig.currentView()):
+def loadShapeFileNew(shpFile, CRS='CRS:84', tocName=False, active=False, view=gvsig.currentView()):
     try:
         CRS = gvsig.currentView().getProjectionCode()
     except:
         pass
-    layer = gvsig.loadLayer('Shape', shpFile=shpFile, CRS=CRS)
+    layer = loadLayerNew('Shape', shpFile=shpFile, CRS=CRS, tocName=tocName, )
     if isinstance(view,str):
         view = gvsig.currentProject().getView(view)
     else:
@@ -577,12 +588,72 @@ def loadShapeFileNew(shpFile, CRS='CRS:84', active=False, view=gvsig.currentView
     view.addLayer(layer)
     layer.setActive(active)
     return gvsig.Layer(layer)
+    
+def loadLayerNew(layerType, tocName=False, **parameters): #
+        try:
+            application = ApplicationLocator.getManager()
+            datamanager =  application.getDataManager()
+            mapcontextmanager = application.getMapContextManager()
+            store_parameters = datamanager.createStoreParameters(layerType)
+            gvsig.copyToDynObject(parameters, store_parameters)
+            store = datamanager.openStore(layerType, store_parameters)       
+            if tocName!=False:
+                nameStore = tocName
+            else:
+                nameStore = store.getName()
+            layer = mapcontextmanager.createLayer(nameStore, store)
+        except Throwable, ex:
+            raise RuntimeException("Can't load layer, "+ str(ex))  
 
+        return layer
+
+def loadRasterLayerNew(rasterfile, mode = "r", tocName=False ):
+    ## Load a Raster file in a Layer
+    gvsig_raster.sourceFileName[0]=rasterfile
+    if not isinstance (rasterfile,File):
+        rasterfile = File(rasterfile)
+    
+    name, ext = gvsig_raster.splitext(rasterfile.getName())
+        
+    if tocName!=False:
+        name = tocName
+    else:
+        name = name
+
+
+    view = gvsig.currentView()
+    
+    # Get the manager to use
+    dalManager = DALLocator.getDataManager()
+    mapContextManager = MapContextLocator.getMapContextManager()
+
+    if ext.lower() == ".ecw" or ext.lower() == ".jp2" :
+        # FIXME
+        pass
+    elif ext.lower() == ".mrsid":
+        # FIXME
+        pass
+    else:
+        # Create the parameters to open the raster store based in GDAL
+        params = dalManager.createStoreParameters("Gdal Store")
+        params.setFile(rasterfile)
+
+    # Create the raster store
+    dataStore = dalManager.createStore(params)
+
+    # Create a raster layer based in this raster store
+    layer = mapContextManager.createLayer(name, dataStore);
+
+    view.addLayer(layer)
+    return layer
+    
 def algHelp(geoalgorithmId):
     geoprocess = Geoprocess()
     for algorithmId, algorithm in geoprocess.getAlgorithms().items():
-        if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": pass
-        else: continue
+        if algorithmId.encode('UTF-8') == geoalgorithmId.encode('UTF-8') or geoalgorithmId == "All": 
+            pass
+        else: 
+            continue
         print "* Algorithm help: ", algorithm.getName().encode('UTF-8')
         print "*", algorithm.commandLineHelp.encode('UTF-8')
     del(geoprocess)
@@ -793,18 +864,19 @@ def main(*args):
     #layer2 = gvsig.currentView().getLayer("2")
     #print layer1, layer2
     #
-    algHelp("cluster")
+    #algHelp("cluster")
     #runalg("merge", layer1, [layer2])
 
-    layer1 = sRaster(0)
-    layer2 = sRaster(1)
-    print "Layer1: ", layer1.name, layer1, layer1.getCellSize()
-    print "Layer2: ", layer2.name, layer2, layer2.getCellSize()
+    #layer1 = sRaster(0)
+    #layer2 = sRaster(1)
+    #print "Layer1: ", layer1.name, layer1, layer1.getCellSize()
+    #print "Layer2: ", layer2.name, layer2, layer2.getCellSize()
 
 
-    runalg("cluster" , INPUT=[(layer1, 0),(layer2,0)] , NUMCLASS=3)#, CELLSIZE=layer1.getCellSize(), CELLSIZEZ=1)#,EXTENT=layer1)
+    #runalg("cluster" , INPUT=[(layer1, 0),(layer2,0)] , NUMCLASS=3)#, CELLSIZE=layer1.getCellSize(), CELLSIZEZ=1)#,EXTENT=layer1)
     #runalg("mergegrids", [layer1, layer2], "0")
-
+    v1 = runalg("randomvector",10, TYPE_POLYGON, EXTENT=[0,0,0,500,500,0], TOCNAME="Random vector")
+    r = runalg("generaterandomnormal", EXTENT = [0,0,0,500,500,0], MEAN =0.5, STDDEV = 0.5, TOCNAME="Raster Generate Random normal")
     print "end"
 
 def mainLibrary():
