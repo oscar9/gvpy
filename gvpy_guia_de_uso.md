@@ -195,6 +195,13 @@ Podemos introducirla tanto como por su nombre:
 o por el objeto de tipo Vista:
 `OUTVIEW=currentView()`
 
+### TOCNAME
+Este atributo nos permite modificar el nombre con el que aparecen las capas en el TOC. Es independiente del nombre que tenga la capa.
+
+Ejemplo:
+`TOCNAME="Resultado Vector 01"`
+
+
 ##model2script: SEXTANTE model to Script
 Convierte tus ficheros `sextante.model`, creados por el Model Builder, en scripts. Tan solo utiliza la función `gvpy.model2script` con la ruta del fichero model, y la ruta del nuevo fichero que vas a crear. Luego deberás de mover tu script a la carpeta de Scripting que está en:
 `C:\Users\[user]\gvSIG\plugins\org.gvsig.scripting.app.extension\scripts`
