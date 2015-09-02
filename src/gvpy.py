@@ -678,24 +678,24 @@ def algSearch(strSearch):
 
 def currentRaster():
     """Return first raster active layer on the View"""
-    layers = gvsig.currentView().getLayers()
-    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    l = gvsig.currentView().getLayers()
+    lyrlist = [l[i] if isinstance(l[i], DefaultFLyrRaster) else Layer(l[i]) for i in range(0,l.__len__())]
     for i in lyrlist:
       if i.isActive() and isinstance(i, DefaultFLyrRaster):  return i
     return None
 
 def firstRaster():
     """Return first raster active layer on the View"""
-    layers = gvsig.currentView().getLayers()
-    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    l = gvsig.currentView().getLayers()
+    lyrlist = [l[i] if isinstance(l[i], DefaultFLyrRaster) else Layer(l[i]) for i in range(0,l.__len__())]
     for i in lyrlist:
       if isinstance(i, DefaultFLyrRaster):  return i
     return None
 
 def sRaster(n):
     """Return first raster active layer on the View"""
-    layers = gvsig.currentView().getLayers()
-    lyrlist = [ layers[i] for i in range(0,layers.__len__())]
+    l = gvsig.currentView().getLayers()
+    lyrlist = [l[i] if isinstance(l[i], DefaultFLyrRaster) else Layer(l[i]) for i in range(0,l.__len__())]
     count = 0
     for i in lyrlist:
       if isinstance(i, DefaultFLyrRaster):
@@ -706,8 +706,8 @@ def sRaster(n):
     return None
 def currentActive():
     """Return first active layer on the View"""
-    layers = gvsig.currentView().getLayers()
-    lyrlist = [ layers[i] for i in range(0, layers.__len__())]
+    l = gvsig.currentView().getLayers()
+    lyrlist = [l[i] if isinstance(l[i], DefaultFLyrRaster) else Layer(l[i]) for i in range(0,l.__len__())]
     for i in lyrlist:
         if i.isActive(): return i
     return None
