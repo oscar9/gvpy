@@ -15,12 +15,12 @@ Valid parameters of the algorithms for use:
 - Multi parameters
 
 ----------
-###gvpy: USER GUIDE in English
+###gvpy: USER GUIDE in English (Not updated)
 https://github.com/oscar9/gvpy/blob/master/gvpy_user_guide.md
 
 All the options needed for launch geoprocess from the Scripting Framework
 
-###gvpy: GUÍA DE USO en Español
+###gvpy: GUÍA DE USO en Español (Updated)
 https://github.com/oscar9/gvpy/blob/master/gvpy_guia_de_uso.md
 
 Todas las opciones disponibles para lanzar geoprocesos desde el Módulo de Scripting

@@ -130,9 +130,11 @@ Además, como explico en el siguiente apartado, **se pueden capturar las capas r
 
 ### Parámetros Multi input (beta)
 Si son de tipo Vector se incluirán mediante una lista Ej. [vectorLayer1, vectorLayer2, ..... ]
+
+### Parámetros Raster + Banda
 Si son de tipo raster + banda se incluyen con una tupla Ej. (raster, 1)
 
-Ej.
+Ej. Usando multi input de rasters
 runalg("vectorizetrees", [(sRaster(0),1), (sRaster(1),1)], "capa1", "1.0", "1.0", "#")
 
 ### Parámetro Point
