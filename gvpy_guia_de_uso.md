@@ -135,6 +135,10 @@ Si son de tipo raster + banda se incluyen con una tupla Ej. (raster, 1)
 Ej.
 runalg("vectorizetrees", [(sRaster(0),1), (sRaster(1),1)], "capa1", "1.0", "1.0", "#")
 
+### Parámetro Point
+Se puede pasar como texto: "100.0, 150.0"
+o como geometría de gvSIG: geom.createPoint(100.0, 150.0)
+
 ### Parámetros Fixed table
 Se tienen que añadir como texto (string), con una sucesión de números a modo de lista.
 Ej. LUT="1,1,1,0,0,0"

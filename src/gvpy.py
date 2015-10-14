@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # File: gvpy.py
-# Version: v0.3
+# Version: v0.4
 #
 
 __author__ = """Oscar Martinez Olmos <masquesig@gmail.com>"""
@@ -98,6 +98,7 @@ class Geoprocess:
           cond6 = True
       else:
           cond6 = False
+      cond7 = (str(param) == "Point")
 
       if isstr:
           if cond1:
@@ -111,8 +112,18 @@ class Geoprocess:
           elif cond6:
               #  <type 'java.util.ArrayList'>
               paramValue = list(paramValue)
+          elif cond7: #Point
+              paramValue = paramValue.split(',')
+              x = float(paramValue[0])
+              y = float(paramValue[1])
+              paramValue = java.awt.geom.Point2D.Double(x, y)
           else: #is str
               pass
+      else:
+          if cond7: #punto de gvsig. agregar condicion punto
+              x = paramValue.getX()
+              y = paramValue.getY()
+              paramValue = java.awt.geom.Point2D.Double(x, y)
       if DEV_INFO:
           print "Param Name: ", param.getParameterName()
           print "Param: ", param
